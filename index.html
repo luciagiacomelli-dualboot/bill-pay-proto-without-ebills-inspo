@@ -1422,7 +1422,7 @@ function render() {
 function renderPanel() {
   const planNotes = [];
   const screen = S.cur.filter(x => !planNotes.includes(x));
-  const card = id => { const n = NOTES[id]; return `<div class="ncard k-${n.k}" id="nc-${id}"><span class="ktag">${KIND[n.k].icon}${T(KIND[n.k])}</span><h3>${esc(T(n.t))}</h3><p>${esc(T(n.b))}</p><div class="meta"><b>${L("Responde", "Answers")}:</b> ${n.who.map(w => T(WHO[w])).join(", ")} · <b>${L("Fuente", "Source")}:</b> ${esc(n.src)}</div></div>`; };
+  const card = id => { const n = NOTES[id]; return `<div class="ncard k-${n.k}" id="nc-${id}"><span class="ktag">${KIND[n.k].icon}${T(KIND[n.k])}</span><h3>${esc(T(n.t))}</h3><p>${esc(T(n.b))}</p></div>`; };
   $("#panel").innerHTML = `<h2>${L("Notas de revisión · no son parte del producto", "Review notes · not part of the product")} (${screen.length})</h2>
     <p class="lead">${L("Los círculos de colores en el teléfono marcan dónde hay una nota. Acá están las de esta pantalla.", "The colored dots on the phone mark where a note exists. The ones on this screen are listed here.")}</p>
     ${screen.length ? screen.map(card).join("") : `<p class="empty-n">${L("Esta pantalla no tiene notas.", "No notes on this screen.")}</p>`}
@@ -1449,7 +1449,7 @@ function renderChrome() {
 /* ================= Pending tab ================= */
 function renderPending() {
   const order = ["Chap", "SoFi", "Mike", "Rafa", "Equipo"];
-  const card = id => { const n = NOTES[id]; return `<div class="ncard k-${n.k}"><span class="ktag">${KIND[n.k].icon}${T(KIND[n.k])}</span><h3>${esc(T(n.t))}</h3><p>${esc(T(n.b))}</p><div class="meta"><b>${L("Fuente", "Source")}:</b> ${esc(n.src)}</div></div>`; };
+  const card = id => { const n = NOTES[id]; return `<div class="ncard k-${n.k}"><span class="ktag">${KIND[n.k].icon}${T(KIND[n.k])}</span><h3>${esc(T(n.t))}</h3><p>${esc(T(n.b))}</p></div>`; };
   const open = id => ["ask", "verify", "fee", "block"].includes(NOTES[id].k);
   const groups = order.map(w => {
     const ids = Object.keys(NOTES).filter(id => NOTES[id].who[0] === w && open(id));
@@ -1497,7 +1497,7 @@ function closeSheet(now, sel = "#overlay") {
 function noteSheet(id) {
   const n = NOTES[id];
   openSheet(`<div class="sh-head"><span class="ktag k-${n.k}" style="justify-self:start">${KIND[n.k].icon}${T(KIND[n.k])}</span><h2>${esc(T(n.t))}</h2></div>
-    <div class="sh-body"><p>${esc(T(n.b))}</p><p class="meta"><b>${L("Responde", "Answers")}:</b> ${n.who.map(w => T(WHO[w])).join(", ")}<br><b>${L("Fuente", "Source")}:</b> ${esc(n.src)}</p></div>
+    <div class="sh-body"><p>${esc(T(n.b))}</p></div>
     <div class="sh-foot"><button type="button" class="btn secondary block" data-act="closeNote">${L("Cerrar", "Close")}</button></div>`, "#overlay2", "closeNote");
   const c = $(`#nc-${id}`);
   if (c) { c.scrollIntoView({ block: "nearest", behavior: "smooth" }); c.classList.add("flash"); setTimeout(() => c.classList.remove("flash"), 1400); }
