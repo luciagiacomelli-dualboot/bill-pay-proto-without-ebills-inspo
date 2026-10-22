@@ -1,0 +1,1650 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DingoBlu Bill Pay · Plan A (sin eBills) y Plan B (con eBills)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@500&display=swap">
+<style>
+/* Scope prototype for Bill Pay: Plan A (SoFi/Galileo only, no eBills) vs Plan B (external eBill provider).
+   Self-contained on purpose: no local assets, so the file can be published as is.
+   Visual system follows the v2 prototype (Figma "CP3-F2--2 - Pay Bill"): Geist, primary #2A76C5 on #F3F5F7,
+   cards 16px, inputs 12px, pill buttons, sheets 28px. Note pins are the only element that is not product UI. */
+:root {
+  --ink: #212121; --royal: #2A76C5; --royal-press: #22629F; --sky: #D8EAFF; --sky-line: #B3D4FB;
+  --g600: #646479; --g500: #646479; --g300: #BDBDC9; --g200: #EBEBEB; --g100: #F0F1F4; --g50: #F3F5F7; --white: #FFFFFF;
+  --ok: #15815A; --ok-bg: #E8F5EF; --ok-line: #B9E0CD; --warn: #9A6300; --warn-bg: #FFF6E3; --warn-line: #EED4A0;
+  --err: #D92D57; --err-bg: #FEECF0; --err-line: #FCC5D2; --scrim: rgba(18, 18, 18, .45);
+  --ui: "Geist", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --mono: "Geist Mono", ui-monospace, Menlo, monospace;
+  --shadow-xs: 0 1px 2px rgba(10, 13, 18, .05); --shadow-sm: 0 1px 3px rgba(10, 13, 18, .1), 0 1px 2px rgba(10, 13, 18, .06);
+  --ease: cubic-bezier(.32, .72, 0, 1); --s: 1;
+  /* Note pin palette */
+  --why: #2A76C5; --why-bg: #EAF3FE; --risk: #B54708; --risk-bg: #FFF4E5; --ask: #6941C6; --ask-bg: #F4F0FF;
+  --verify: #8A5A00; --verify-bg: #FFF6E3; --fee: #0E7C66; --fee-bg: #E6F7F2; --opp: #0B6E8A; --opp-bg: #E6F3F7; --block: #C01048; --block-bg: #FFF0F4;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; min-height: 100%; }
+body { background: #E6EBF2; color: var(--ink); font: 400 15px/1.45 var(--ui); letter-spacing: -.01em; -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+h1, h2, h3, p, ul { margin: 0; }
+ul { padding: 0; list-style: none; }
+.num { font-variant-numeric: tabular-nums; }
+svg.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+:focus-visible { outline: 2px solid var(--royal); outline-offset: 2px; }
+
+/* ---------- Lab chrome (outside the phone) ---------- */
+.top { position: sticky; top: 0; z-index: 20; background: #fff; border-bottom: 1px solid #DCE1E8; }
+.top-in { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 10px 18px; }
+.top h1 { font: 600 16px/1.2 var(--ui); margin-right: auto; }
+.top h1 small { display: block; font: 400 12.5px/1.3 var(--ui); color: var(--g500); margin-top: 2px; }
+.seg { display: inline-flex; border: 1px solid #D5DAE1; border-radius: 999px; overflow: hidden; background: #fff; }
+.seg button { border: 0; background: none; padding: 6px 12px; font: 500 13px/1 var(--ui); color: var(--g600); }
+.seg button.on { background: var(--royal); color: #fff; }
+.ctl { display: inline-flex; align-items: center; gap: 6px; font: 500 12.5px/1 var(--ui); color: var(--g500); }
+.ctl select { appearance: none; border: 1px solid #D5DAE1; border-radius: 8px; padding: 6px 26px 6px 10px; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23646479' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 9px center; font: 500 13px/1 var(--ui); color: var(--ink); }
+.mini { border: 1px solid #D5DAE1; background: #fff; border-radius: 8px; padding: 6px 12px; font: 500 13px/1 var(--ui); color: var(--g600); }
+.mini:hover { color: var(--ink); border-color: var(--g300); }
+.sw-notes { display: inline-flex; align-items: center; gap: 6px; font: 500 12.5px/1 var(--ui); color: var(--g500); cursor: pointer; }
+.sw-notes input { accent-color: var(--royal); width: 16px; height: 16px; }
+
+.lab { display: grid; grid-template-columns: auto minmax(320px, 440px); gap: 22px; justify-content: center; align-items: start; padding: 16px 18px 40px; }
+@media (max-width: 900px) { .lab { grid-template-columns: 1fr; justify-items: center; } .panel { width: 100%; max-width: 560px; position: static !important; max-height: none !important; } }
+.device-box { width: calc(421px * var(--s)); height: calc(880px * var(--s)); position: relative; }
+.device { position: absolute; left: 0; top: 0; width: 421px; height: 880px; transform: scale(var(--s)); transform-origin: 0 0; background: #101114; border-radius: 64px; padding: 14px; box-shadow: 0 0 0 1.5px #3A3C42, 0 0 0 3px #1A1B1F, 0 40px 80px -30px rgba(10,13,18,.45); }
+.screen { position: relative; width: 393px; height: 852px; border-radius: 50px; overflow: hidden; background: var(--g50); isolation: isolate; }
+.statusbar { position: absolute; top: 0; left: 0; right: 0; height: 54px; z-index: 30; pointer-events: none; display: flex; justify-content: space-between; align-items: flex-end; padding: 0 30px 10px 38px; font: 500 16px/20px var(--ui); }
+.island { position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 125px; height: 37px; border-radius: 20px; background: #000; z-index: 31; }
+.homebar { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 139px; height: 5px; border-radius: 3px; background: var(--ink); z-index: 30; pointer-events: none; }
+
+/* ---------- Side panel ---------- */
+.panel { position: sticky; top: 76px; max-height: calc(100vh - 92px); overflow: auto; background: #fff; border: 1px solid #DCE1E8; border-radius: 16px; padding: 16px; box-shadow: var(--shadow-sm); }
+.panel h2 { font: 600 15px/1.3 var(--ui); margin-bottom: 4px; }
+.panel .lead { font-size: 13px; color: var(--g500); margin-bottom: 12px; }
+.panel .grp { font: 600 11.5px/1 var(--ui); text-transform: uppercase; letter-spacing: .04em; color: var(--g500); margin: 16px 0 8px; }
+.ncard { border: 1px solid var(--g200); border-left-width: 4px; border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; transition: box-shadow .2s, background-color .4s; }
+.ncard.flash { background: #FFFBE6; box-shadow: 0 0 0 2px #F5C518; }
+.ncard h3 { font: 600 13.5px/1.35 var(--ui); margin: 4px 0; }
+.ncard p { font-size: 13px; line-height: 1.5; color: #3B3B4A; margin: 4px 0; }
+.ncard .meta { font-size: 11.5px; color: var(--g500); margin-top: 6px; }
+.ncard .meta b { color: var(--ink); font-weight: 600; }
+.ktag { display: inline-flex; align-items: center; gap: 4px; font: 600 11px/1 var(--ui); padding: 3px 7px; border-radius: 999px; }
+.panel .empty-n { font-size: 13px; color: var(--g500); padding: 8px 0; }
+
+/* Kind colors (pins, tags, cards) */
+.k-why { --kc: var(--why); --kb: var(--why-bg); } .k-risk { --kc: var(--risk); --kb: var(--risk-bg); }
+.k-ask { --kc: var(--ask); --kb: var(--ask-bg); } .k-verify { --kc: var(--verify); --kb: var(--verify-bg); }
+.k-fee { --kc: var(--fee); --kb: var(--fee-bg); } .k-opp { --kc: var(--opp); --kb: var(--opp-bg); }
+.k-block { --kc: var(--block); --kb: var(--block-bg); }
+.ktag { color: var(--kc); background: var(--kb); }
+.ncard { border-left-color: var(--kc); }
+
+/* ---------- Note pins (inside the phone) ---------- */
+.pins { display: flex; flex-wrap: wrap; gap: 6px; }
+.pin { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px 0 6px; border-radius: 999px; border: 1px dashed var(--kc); background: var(--kb); color: var(--kc); font: 600 11px/1 var(--ui); letter-spacing: 0; white-space: nowrap; vertical-align: middle; }
+.pin svg.i { width: 12px; height: 12px; stroke-width: 2.2; }
+.pin:hover { border-style: solid; }
+body.no-notes .pin, body.no-notes .pins { display: none !important; }
+
+/* ---------- Pages ---------- */
+.page { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--g50); }
+.page.in { animation: pin-in .3s var(--ease); }
+.page.in-back { animation: pin-back .3s var(--ease); }
+@keyframes pin-in { from { transform: translateX(40px); opacity: .4; } }
+@keyframes pin-back { from { transform: translateX(-40px); opacity: .4; } }
+.pbar { flex: none; padding: 62px 16px 0; display: grid; grid-template-columns: 40px minmax(0, 1fr) 40px; min-height: 112px; align-items: center; }
+.pbar h1 { grid-column: 2; text-align: center; font: 500 16px/1.25 var(--ui); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pbar.large { grid-template-columns: minmax(0, 1fr) auto; align-items: end; padding-bottom: 8px; }
+.pbar.large h1 { grid-column: 1; text-align: left; font: 500 30px/36px var(--ui); letter-spacing: -.02em; }
+.pbar.large .btn.link { grid-column: 2; grid-row: 1; font-size: 12px; min-height: 28px; padding: 0 2px 6px; white-space: nowrap; }
+.pbar .back { grid-column: 1; justify-self: start; margin-left: -7px; }
+.icon-btn { width: 40px; height: 40px; border-radius: 50%; border: 0; background: transparent; display: grid; place-items: center; }
+.icon-btn:hover { background: var(--g100); }
+.icon-btn svg.i { width: 24px; height: 24px; }
+.pbody { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 16px 60px; scrollbar-width: none; }
+.pbody::-webkit-scrollbar { display: none; }
+.pbody > * + * { margin-top: 20px; }
+.pbody.has-foot { padding-bottom: 140px; }
+.pfoot { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; padding: 26px 16px 34px; display: grid; gap: 8px; background: linear-gradient(to top, var(--g50) 65%, rgba(243,245,247,0)); }
+
+/* ---------- Buttons ---------- */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 20px; border-radius: 999px; border: 1px solid transparent; font-weight: 500; font-size: 15px; white-space: nowrap; transition: background-color .15s, border-color .15s; }
+.btn:active:not(:disabled) { transform: scale(.98); }
+.btn.block { width: 100%; min-height: 52px; font-size: 16px; }
+.btn.sm { min-height: 36px; padding: 0 14px; font-size: 14px; }
+.btn.primary { background: var(--royal); color: #fff; } .btn.primary:hover { background: var(--royal-press); }
+.btn.secondary { background: #fff; color: var(--royal); border-color: var(--g200); } .btn.secondary:hover { border-color: var(--royal); }
+.btn.danger { background: var(--err); color: #fff; }
+.btn.ghost-danger { background: none; color: var(--err); }
+.btn.link { background: none; border: 0; color: var(--royal); padding: 0 4px; min-height: 32px; }
+.btn.link:hover { text-decoration: underline; }
+.btn:disabled { background: var(--g200); color: var(--g500); cursor: not-allowed; }
+.btn-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.qa { display: grid; justify-items: center; gap: 6px; padding: 12px 4px; background: #fff; border: 1px solid var(--g200); border-radius: 16px; font: 500 13px/1.2 var(--ui); text-align: center; }
+.qa:hover { border-color: var(--royal); }
+.qa .ic { width: 36px; height: 36px; border-radius: 12px; background: var(--sky); color: var(--royal); display: grid; place-items: center; }
+.qa.primary { background: var(--royal); color: #fff; border-color: var(--royal); }
+.qa.primary .ic { background: rgba(255,255,255,.18); color: #fff; }
+
+/* ---------- Logo (monogram only: Galileo supplies no logos) ---------- */
+.logo { --size: 40px; width: var(--size); height: var(--size); border-radius: 10px; flex: none; display: grid; place-items: center; border: 1px solid rgba(0,0,0,.06); font: 600 calc(var(--size) * .34)/1 var(--ui); letter-spacing: -.02em; }
+.logo.round { border-radius: 50%; }
+.logo.lg { --size: 64px; border-radius: 50%; }
+.logo.person { background: #EEF0FF; color: #3F3FB5; }
+
+/* ---------- Lists and rows ---------- */
+.sec { display: grid; gap: 10px; }
+.sec-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 2px; flex-wrap: wrap; }
+.sec-head h2 { font: 500 16px/1.25 var(--ui); }
+.list { background: #fff; border: 1px solid var(--g200); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-xs); }
+.list > li + li { border-top: 1px solid var(--g100); }
+.row { width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 14px; min-height: 66px; background: none; border: 0; text-align: left; }
+button.row:hover { background: var(--g50); }
+.row.picking { grid-template-columns: auto auto minmax(0, 1fr) auto; }
+.r-main { display: grid; gap: 3px; min-width: 0; }
+.r-name { font: 500 15px/20px var(--ui); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.r-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font: 400 13px/18px var(--ui); color: var(--g500); }
+.r-end { display: grid; justify-items: end; gap: 3px; text-align: right; }
+.r-amt { font: 500 15px/20px var(--ui); }
+.r-amt.muted { color: var(--g500); font-weight: 400; }
+.add-row { width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px; background: none; border: 0; color: var(--royal); font: 500 15px/20px var(--ui); text-align: left; }
+.add-row:hover { background: var(--g50); }
+.add-row .ic { width: 40px; height: 40px; border-radius: 10px; background: var(--sky); display: grid; place-items: center; }
+.chip { display: inline-flex; align-items: center; gap: 4px; font: 500 12px/18px var(--ui); padding: 0 8px; border-radius: 999px; white-space: nowrap; }
+.chip svg.i { width: 12px; height: 12px; stroke-width: 2.2; }
+.chip.info { color: var(--royal); background: var(--sky); } .chip.ok { color: var(--ok); background: var(--ok-bg); }
+.chip.err { color: var(--err); background: var(--err-bg); } .chip.warn { color: var(--warn); background: var(--warn-bg); }
+.chip.neutral { color: var(--g600); background: var(--g100); }
+.badge-ap { display: inline-flex; padding: 1px 6px; border-radius: 6px; background: var(--sky); border: 1px solid var(--sky-line); color: var(--royal); font: 500 11px/1.5 var(--mono); }
+.method { display: inline-flex; align-items: center; gap: 4px; font: 500 12px/18px var(--ui); color: var(--g600); }
+.method svg.i { width: 13px; height: 13px; }
+.cb { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--g300); display: grid; place-items: center; color: transparent; }
+.cb.on { background: var(--royal); border-color: var(--royal); color: #fff; }
+.cb svg.i { width: 13px; height: 13px; stroke-width: 3; }
+
+/* ---------- Summary / hero ---------- */
+.summary { background: #fff; border: 1px solid var(--g200); border-radius: 16px; padding: 16px; display: grid; gap: 6px; box-shadow: var(--shadow-xs); }
+.summary .lbl { font: 500 13px/18px var(--ui); color: var(--g500); }
+.summary .total { font: 500 32px/38px var(--ui); letter-spacing: -.02em; }
+.summary .ctx { font: 400 13.5px/19px var(--ui); color: var(--g600); }
+.summary .ctx.err { color: var(--err); font-weight: 500; }
+.summary .acts { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.hero { display: grid; justify-items: center; text-align: center; gap: 4px; padding-top: 4px; }
+.hero .logo { margin-bottom: 8px; }
+.hero h2 { font: 500 22px/28px var(--ui); }
+.hero p { font: 400 14px/20px var(--ui); color: var(--g500); }
+.hero .big { font: 500 40px/46px var(--ui); letter-spacing: -.03em; }
+
+/* ---------- Notices, cards, facts ---------- */
+.notice { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; padding: 12px 14px; border-radius: 16px; border: 1px solid; font: 400 13.5px/19px var(--ui); color: #3B3B4A; }
+.notice b { color: var(--ink); font-weight: 500; }
+.notice .pins { margin-top: 8px; }
+.notice.info { background: var(--sky); border-color: var(--sky-line); } .notice.info > svg.i { color: var(--royal); }
+.notice.warn { background: var(--warn-bg); border-color: var(--warn-line); } .notice.warn > svg.i { color: var(--warn); }
+.notice.err { background: var(--err-bg); border-color: var(--err-line); } .notice.err > svg.i { color: var(--err); }
+.notice.ok { background: var(--ok-bg); border-color: var(--ok-line); } .notice.ok > svg.i { color: var(--ok); }
+.notice.block { background: var(--block-bg); border-color: #F9C6D6; } .notice.block > svg.i { color: var(--block); }
+.card { background: #fff; border: 1px solid var(--g200); border-radius: 16px; padding: 16px; display: grid; gap: 14px; }
+.facts { background: #fff; border: 1px solid var(--g200); border-radius: 16px; overflow: hidden; }
+.facts > * + * { border-top: 1px solid var(--g100); }
+.fact { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 12px; align-items: start; padding: 12px 16px; }
+.fact .k { font: 500 13.5px/20px var(--ui); color: var(--g500); }
+.fact .v { font: 500 14.5px/20px var(--ui); min-width: 0; }
+.fact .v small { display: block; font: 400 12.5px/17px var(--ui); color: var(--g500); margin-top: 2px; }
+.fact .v .pins { margin-top: 6px; }
+.disclosure { font-size: 12.5px; line-height: 18px; color: var(--g600); padding: 0 4px; }
+.apcard { width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 14px 16px; background: #EAF3FE; border: 1px solid var(--sky-line); border-radius: 16px; text-align: left; }
+.apcard .ic { color: var(--royal); }
+.apcard b { display: block; font-weight: 500; }
+.apcard span { font-size: 13px; color: var(--g600); }
+
+/* ---------- Forms ---------- */
+.field { display: grid; gap: 6px; }
+.field > label { font: 500 14px/20px var(--ui); }
+.opt { font-weight: 400; color: var(--g500); }
+input[type=text], input[type=date], input[type=tel], select.input { width: 100%; min-height: 48px; padding: 0 14px; border: 1px solid var(--g200); border-radius: 12px; background: #fff; font-size: 16px; }
+select.input { appearance: none; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23646479' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 14px center; padding-right: 36px; }
+input:focus, select.input:focus { border-color: var(--royal); outline: 2px solid var(--royal); outline-offset: 0; }
+input[aria-invalid=true] { border-color: var(--err); }
+.hint { font-size: 12.5px; line-height: 17px; color: var(--g500); }
+.err-msg { font-size: 12.5px; color: var(--err); font-weight: 500; }
+.row2 { display: grid; grid-template-columns: 1.3fr 1fr; gap: 10px; }
+.amount-entry { display: grid; justify-items: center; gap: 8px; }
+.amount-entry input { min-height: 64px; max-width: 260px; border: 0; border-bottom: 2px solid var(--g200); border-radius: 0; background: none; text-align: center; font: 500 44px/52px var(--ui); letter-spacing: -.03em; }
+.amount-entry input:focus { outline: 0; border-bottom-color: var(--royal); }
+.sugg { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.sugg button { border: 1px solid var(--g200); background: #fff; border-radius: 999px; padding: 6px 12px; font: 500 13px/1 var(--ui); }
+.sugg button:hover { border-color: var(--royal); color: var(--royal); }
+.choices { background: #fff; border: 1px solid var(--g200); border-radius: 16px; overflow: hidden; }
+.choices > * + * { border-top: 1px solid var(--g100); }
+.choice { width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 14px 16px; background: none; border: 0; text-align: left; }
+.choice:hover { background: var(--g50); }
+.choice .c-name { font: 500 15px/20px var(--ui); }
+.choice .c-sub { font: 400 13px/18px var(--ui); color: var(--g500); }
+.choice .tick { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--g300); }
+.choice.on .tick { border: 7px solid var(--royal); }
+.choice .ic { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--sky); color: var(--royal); }
+.choice .ic.chk { background: var(--warn-bg); color: var(--warn); }
+.pillset { display: flex; flex-wrap: wrap; gap: 6px; }
+.pillset button { border: 1px solid var(--g200); background: #fff; border-radius: 999px; padding: 8px 14px; font: 500 14px/1 var(--ui); }
+.pillset button.on { background: var(--royal); color: #fff; border-color: var(--royal); }
+.toggle { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 14px 16px; background: #fff; border: 1px solid var(--g200); border-radius: 16px; cursor: pointer; }
+.toggle b { display: block; font: 500 15px/20px var(--ui); }
+.toggle span { font: 400 13px/18px var(--ui); color: var(--g500); }
+.toggle input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.toggle .sw { width: 51px; height: 31px; border-radius: 999px; background: var(--g200); position: relative; transition: background-color .2s; }
+.toggle .sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.25); transition: transform .2s var(--ease); }
+.toggle:has(input:checked) .sw { background: var(--ok); }
+.toggle:has(input:checked) .sw::after { transform: translateX(20px); }
+.code-input { letter-spacing: .5em; text-align: center; font: 500 24px/1 var(--ui) !important; }
+
+/* ---------- Start screen ---------- */
+.start-intro { display: grid; gap: 6px; }
+.start-intro h2 { font: 500 26px/32px var(--ui); letter-spacing: -.02em; }
+.start-intro p { color: var(--g600); font-size: 14.5px; }
+.plan { width: 100%; display: grid; gap: 10px; text-align: left; padding: 18px; background: #fff; border: 1px solid var(--g200); border-radius: 20px; box-shadow: var(--shadow-sm); }
+.plan:hover { border-color: var(--royal); }
+.plan .p-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.plan .p-letter { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; font: 600 17px/1 var(--ui); background: var(--sky); color: var(--royal); }
+.plan.b .p-letter { background: var(--block-bg); color: var(--block); }
+.plan h3 { font: 500 18px/24px var(--ui); }
+.plan ul { display: grid; gap: 4px; font-size: 13.5px; color: var(--g600); }
+.plan li::before { content: "· "; color: var(--g300); }
+.plan .go { font: 500 14px/1 var(--ui); color: var(--royal); }
+
+/* ---------- Timeline ---------- */
+.tl { background: #fff; border: 1px solid var(--g200); border-radius: 16px; padding: 14px 16px; }
+.tl li { position: relative; padding: 0 0 16px 30px; }
+.tl li:last-child { padding-bottom: 0; }
+.tl li::before { content: ""; position: absolute; left: 7px; top: 18px; bottom: -2px; width: 2px; background: var(--g200); }
+.tl li:last-child::before { display: none; }
+.tl .dot { position: absolute; left: 0; top: 2px; width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--g300); background: #fff; }
+.tl li.done .dot { background: var(--ok); border-color: var(--ok); }
+.tl li.done::before { background: var(--ok-line); }
+.tl li.now .dot { border-color: var(--royal); box-shadow: 0 0 0 4px var(--sky); }
+.tl li.unknown .dot { border-style: dashed; }
+.tl b { display: block; font: 500 14.5px/20px var(--ui); }
+.tl span { font: 400 12.5px/17px var(--ui); color: var(--g500); }
+.tl code, .code { font: 500 11px/1 var(--mono); color: var(--g600); background: var(--g100); padding: 2px 5px; border-radius: 5px; }
+.alt { display: grid; gap: 8px; }
+.alt li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; padding: 10px 12px; background: #fff; border: 1px solid var(--g200); border-radius: 12px; font-size: 13px; color: var(--g600); }
+.alt li b { display: block; color: var(--ink); font-weight: 500; font-size: 14px; }
+
+/* ---------- Success ---------- */
+.success { display: grid; justify-items: center; text-align: center; gap: 8px; padding-top: 40px; }
+.success .mark { width: 88px; height: 88px; border-radius: 50%; background: var(--ok-bg); color: var(--ok); display: grid; place-items: center; margin-bottom: 10px; }
+.success .mark.err { background: var(--err-bg); color: var(--err); }
+.success .mark.warn { background: var(--warn-bg); color: var(--warn); }
+.success .mark svg.i { width: 40px; height: 40px; stroke-width: 2.4; }
+.success h2 { font: 500 22px/28px var(--ui); }
+.success .big { font: 500 34px/40px var(--ui); letter-spacing: -.03em; }
+.success p { color: var(--g600); max-width: 32ch; }
+.spinner { width: 44px; height: 44px; border-radius: 50%; border: 3px solid var(--sky); border-top-color: var(--royal); animation: spin .8s linear infinite; margin: 60px auto 16px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------- Pick bar, sheets, toasts ---------- */
+.pickbar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px 30px; background: #fff; border-top: 1px solid var(--g200); border-radius: 18px 18px 0 0; box-shadow: 0 -4px 12px rgba(10,13,18,.06); }
+.pickbar b { display: block; font: 500 16px/1.3 var(--ui); }
+.pickbar span { font-size: 14px; color: var(--g500); }
+.overlay { position: absolute; inset: 0; z-index: 40; display: none; }
+.overlay.open { display: block; }
+.scrim { position: absolute; inset: 0; background: var(--scrim); opacity: 0; transition: opacity .25s; }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; max-height: 86%; display: flex; flex-direction: column; background: #fff; border-radius: 28px 28px 0 0; transform: translateY(100%); transition: transform .32s var(--ease); }
+.overlay.show .scrim { opacity: 1; } .overlay.show .sheet { transform: none; }
+.grip { width: 40px; height: 5px; border-radius: 4px; background: var(--g200); margin: 8px auto 0; flex: none; }
+.sh-head { padding: 14px 20px 4px; display: grid; gap: 6px; }
+.sh-head h2 { font: 500 19px/25px var(--ui); }
+.sh-head p { font-size: 14px; color: var(--g600); }
+.sh-body { overflow-y: auto; padding: 8px 20px; display: grid; gap: 12px; font-size: 14px; line-height: 1.55; color: #3B3B4A; }
+.sh-body .meta { font-size: 12.5px; color: var(--g500); }
+.sh-body .meta b { color: var(--ink); }
+.sh-foot { padding: 12px 20px 40px; display: grid; gap: 8px; }
+.toasts { position: absolute; left: 16px; right: 16px; bottom: 44px; z-index: 50; display: grid; gap: 8px; pointer-events: none; }
+.toast { background: var(--ink); color: #fff; border-radius: 14px; padding: 12px 16px; font: 500 14px/20px var(--ui); box-shadow: 0 12px 30px rgba(10,13,18,.3); animation: up .25s var(--ease); }
+@keyframes up { from { transform: translateY(14px); opacity: 0; } }
+
+/* ---------- Pending tab ---------- */
+.pending { max-width: 1080px; margin: 0 auto; padding: 18px 18px 60px; }
+.pending h2 { font: 600 20px/1.3 var(--ui); margin: 26px 0 6px; }
+.pending .lead { color: var(--g600); margin-bottom: 12px; font-size: 14px; }
+.pgrid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+.pgrid .ncard { background: #fff; margin: 0; }
+.cmp { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #DCE1E8; border-radius: 14px; overflow: hidden; font-size: 13.5px; }
+.cmp th, .cmp td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--g100); }
+.cmp th { background: #F4F6F9; font-size: 12.5px; }
+.cmp tr:last-child td { border-bottom: 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 4px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in">
+  <h1 id="t-title"></h1>
+  <div class="seg" id="tabs"><button type="button" data-tab="proto"></button><button type="button" data-tab="pending"></button></div>
+  <div class="seg" id="plans"><button type="button" data-plan="A"></button><button type="button" data-plan="B"></button></div>
+  <label class="ctl"><span id="l-bal"></span><select id="sim-bal"></select></label>
+  <label class="ctl"><span>Sardine</span><select id="sim-sardine"></select></label>
+  <label class="sw-notes"><input type="checkbox" id="sim-notes" checked><span id="l-notes"></span></label>
+  <button type="button" class="mini" id="restart"></button>
+  <div class="seg" id="langs"><button type="button" data-lang="es">ES</button><button type="button" data-lang="en">EN</button></div>
+</div></header>
+
+<div id="view-proto" class="lab">
+  <div class="device-box"><div class="device"><div class="screen" id="screen">
+    <div class="statusbar" aria-hidden="true"><span>9:41</span><span>●●● ▮</span></div>
+    <div class="island"></div>
+    <div id="pages"></div>
+    <div class="overlay" id="overlay"></div>
+    <div class="overlay" id="overlay2" style="z-index:45"></div>
+    <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+    <div class="homebar"></div>
+  </div></div></div>
+  <aside class="panel" id="panel" aria-live="polite"></aside>
+</div>
+<div id="view-pending" class="pending" hidden></div>
+
+<script>
+(() => {
+"use strict";
+
+/* ================= Helpers ================= */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const money = n => n.toLocaleString("en-US", { style: "currency", currency: "USD" });
+const round2 = n => Math.round(n * 100) / 100;
+const D = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+const ISO = x => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
+const plus = (s, n) => { const x = D(s); x.setDate(x.getDate() + n); return ISO(x); };
+const diffDays = (a, b) => Math.round((D(b) - D(a)) / 86400000);
+const TODAY = "2026-10-21";   /* Wed, Oct 21 2026. Every date in the seed data is relative to this. */
+const d = n => plus(TODAY, n);
+const loc = () => S.lang === "es" ? "es-US" : "en-US";
+const fmt = s => D(s).toLocaleDateString(loc(), { month: "short", day: "numeric" });
+const fmtDay = s => D(s).toLocaleDateString(loc(), { weekday: "short", month: "short", day: "numeric" });
+const parseAmt = v => { const t = String(v).replace(/[$,\s]/g, ""); return /^\d+(\.\d{1,2})?$/.test(t) ? Number(t) : NaN; };
+const L = (es, en) => S.lang === "es" ? es : en;
+const T = o => typeof o === "string" ? o : (o[S.lang] ?? o.es);
+const nextBizDay = s => { let x = plus(s, 1); while ([0, 6].includes(D(x).getDay())) x = plus(x, 1); return x; };
+
+const IC = {
+  back: '<svg class="i" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>',
+  chev: '<svg class="i" viewBox="0 0 24 24" style="color:#BDBDC9"><path d="m9 6 6 6-6 6"/></svg>',
+  plus: '<svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+  check: '<svg class="i" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>',
+  x: '<svg class="i" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+  alert: '<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5M12 16v.01"/></svg>',
+  info: '<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/></svg>',
+  clock: '<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  cal: '<svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+  repeat: '<svg class="i" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15.5 6.2"/><path d="M3 12A9 9 0 0 1 18.5 5.8"/><path d="M18 2v4h-4"/><path d="M6 22v-4h4"/></svg>',
+  send: '<svg class="i" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+  bolt: '<svg class="i" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>',
+  mail: '<svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>',
+  bell: '<svg class="i" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 21h4"/></svg>',
+  user: '<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
+  bank: '<svg class="i" viewBox="0 0 24 24"><path d="M3 10 12 4l9 6M5 10v8M9 10v8M15 10v8M19 10v8M3 20h18"/></svg>',
+  search: '<svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
+  shield: '<svg class="i" viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.5 3 8.3 7 9.5 4-1.2 7-5 7-9.5V6z"/><path d="m9 12 2 2 4-4"/></svg>',
+  doc: '<svg class="i" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg>',
+  link: '<svg class="i" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>',
+  trash: '<svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
+  pencil: '<svg class="i" viewBox="0 0 24 24"><path d="M4 20h4L18.5 9.5a2.8 2.8 0 0 0-4-4L4 16z"/></svg>',
+  q: '<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17v.01"/></svg>',
+  star: '<svg class="i" viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>',
+  dollar: '<svg class="i" viewBox="0 0 24 24"><path d="M12 3v18M16.5 7.5C16 6 14.2 5 12 5c-2.5 0-4.5 1.3-4.5 3.3 0 4.4 9 2.4 9 7 0 2-2 3.7-4.5 3.7-2.3 0-4.1-1-4.6-2.6"/></svg>',
+  lock: '<svg class="i" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>'
+};
+
+/* ================= Note kinds ================= */
+const KIND = {
+  why:    { icon: IC.info,   es: "Por qué",          en: "Why" },
+  risk:   { icon: IC.alert,  es: "Riesgo",           en: "Risk" },
+  ask:    { icon: IC.q,      es: "Pregunta abierta", en: "Open question" },
+  verify: { icon: IC.search, es: "A verificar",      en: "To verify" },
+  fee:    { icon: IC.dollar, es: "Costo a acordar",  en: "Cost to agree" },
+  opp:    { icon: IC.star,   es: "Oportunidad",      en: "Opportunity" },
+  block:  { icon: IC.lock,   es: "Bloqueante",       en: "Blocker" }
+};
+const WHO = { Chap: "Chap", SoFi: { es: "SoFi (vía Chap)", en: "SoFi (via Chap)" }, Mike: "Mike / Allison", Rafa: "Rafa", Equipo: { es: "Equipo (Lula, Rafa, Mati)", en: "Team (Lula, Rafa, Mati)" } };
+
+/* ================= Notes =================
+   k: kind · s: short pin label · t: title · b: body · src: source · who: who answers. */
+const N = (k, who, s, t, b, src) => ({ k, who, s, t, b, src });
+const NOTES = {
+  /* ---- Plan level ---- */
+  planA: N("why", ["Mike", "Chap"],
+    { es: "Plan A", en: "Plan A" },
+    { es: "Plan A: solo lo que trae SoFi/Galileo", en: "Plan A: only what SoFi/Galileo provides" },
+    { es: "Es lo que la documentación de SoFi soporta hoy: buscar y agregar billers, pagar con un monto que escribe el usuario, programar, autopay de monto fijo y cheque en papel. Mike (21/10): el contrato dice “eBills” sin definirlas, y la lectura mínima es un Bill Pay manual (biller, número de cuenta, monto). Es el MVP más probable.",
+      en: "This is what the SoFi docs support today: search and add billers, pay an amount the user types, schedule, fixed-amount autopay and paper checks. Mike (Oct 21): the contract says “eBills” without defining them, and the minimal reading is a manual Bill Pay (biller, account number, amount). Most likely MVP." },
+    "SoFi Bill Pay overview + lifecycle; Granola 21/10 (Mike)"),
+  effort: N("why", ["Rafa", "Mike"],
+    { es: "Esfuerzo", en: "Effort" },
+    { es: "Esfuerzo relativo (estimación de Rafa)", en: "Relative effort (Rafa's estimate)" },
+    { es: "Solo electrónico: ~10–12 casos borde, tamaño base M–L. Cheques: +40–60 % sobre esa base (unas 6–8 pantallas o estados extra, más Sardine y un seguimiento de estados aparte). eBills: L–XL y bloquea el resto hasta elegir proveedor. Es un conteo de casos borde, no velocidad del equipo.",
+      en: "Electronic only: ~10–12 edge cases, base size M–L. Checks: +40–60% on top (about 6–8 extra screens or states, plus Sardine and separate status tracking). eBills: L–XL and blocks the rest until a provider is chosen. It counts edge cases, not team velocity." },
+    "Rafa, análisis de preguntas abiertas 21/10 §4"),
+  ebProvider: N("block", ["Mike", "Chap"],
+    { es: "Falta proveedor", en: "No provider" },
+    { es: "No hay proveedor de eBills", en: "There is no eBill provider" },
+    { es: "La documentación de SoFi no tiene ningún endpoint de facturas, montos adeudados ni vencimientos. Hace falta un segundo proveedor. Mike (21/10): si es un socio externo, la relación comercial la tiene que armar el equipo de Chap, y no se sabe cuánto tarda. El SOW (épico 7) dice “Bill Pay & eBills” sin definir qué son.",
+      en: "The SoFi docs have no endpoint for bills, amounts owed or due dates. A second provider is needed. Mike (Oct 21): if it's an external partner, Chap's team has to set up the business relationship, and nobody knows how long that takes. The SOW (Epic 7) says “Bill Pay & eBills” without defining them." },
+    "SoFi Bill Pay endpoints; SOW 2026-04-17; Granola 21/10"),
+  ebMvp: N("block", ["Mike", "Chap"],
+    { es: "¿Entra en el MVP?", en: "In the MVP?" },
+    { es: "Probablemente no entra en el MVP de noviembre", en: "Probably not in the November MVP" },
+    { es: "MVP en noviembre. Sin proveedor elegido, sin contrato y sin plazos, el Plan B no se puede comprometer para esa fecha. Propuesta: lanzar con el Plan A y diseñar la home para que el Plan B se sume después sin rehacerla.",
+      en: "MVP in November. With no provider, contract or timeline, Plan B can't be committed for that date. Proposal: launch with Plan A and design the home so Plan B can be added later without rebuilding it." },
+    "Board de alineación 21/10; Granola 21/10 (Mike)"),
+  ebCost: N("fee", ["Mike", "Chap"],
+    { es: "Contrato y costo", en: "Contract and cost" },
+    { es: "Contrato y costo del proveedor de eBills", en: "eBill provider contract and cost" },
+    { es: "Quién elige al proveedor, quién lo paga y con qué modelo (por usuario, por biller conectado o por factura). Los proveedores de presentación de facturas suelen cobrar por uso [conocimiento general, no verificado].",
+      en: "Who picks the provider, who pays for it and with what model (per user, per connected biller or per bill). Bill presentment providers usually charge per use [general knowledge, not verified]." },
+    "Conocimiento general; pregunta M1 del board"),
+
+  /* ---- Plan A: home ---- */
+  noEbillHome: N("why", ["Equipo"],
+    { es: "Sin monto ni vencimiento", en: "No amount or due date" },
+    { es: "Sin eBills no sabemos cuánto debe ni cuándo vence", en: "Without eBills we don't know what's owed or when" },
+    { es: "La home solo puede mostrar lo que el usuario programó (pagos y autopay), lo que él mismo cargó como recordatorio y lo que ya pagó. No decimos “Estás al día” ni “Todavía no llegó tu factura”: las dos frases prometen algo que no sabemos.",
+      en: "The home can only show what the user scheduled (payments and autopay), the reminders they set themselves and what they already paid. We don't say “You're all caught up” or “Your bill hasn't arrived yet”: both promise something we don't know." },
+    "SoFi endpoints; doc sesión 2 §13–14"),
+  schedSource: N("verify", ["Rafa", "SoFi"],
+    { es: "¿De dónde sale?", en: "Data source" },
+    { es: "¿El total programado incluye las próximas cuotas del autopay?", en: "Does the scheduled total include upcoming autopay runs?" },
+    { es: "Los pagos programados salen de Get Scheduled Bill Payments. Pero las cuotas de un autopay no tienen ID hasta el día en que se ejecutan. Hay que verificar si ese endpoint devuelve la próxima cuota o si la calculamos nosotros desde la configuración del biller.",
+      en: "Scheduled payments come from Get Scheduled Bill Payments. But autopay runs have no ID until the day they run. We need to verify whether that endpoint returns the next run or whether we compute it from the biller's settings." },
+    "SoFi lifecycle (Part 2: recurring series)"),
+  activityInBiller: N("why", ["Equipo"],
+    { es: "Actividad", en: "Activity" },
+    { es: "La actividad va dentro de cada biller, no en la home", en: "Activity lives inside each biller, not on the home" },
+    { es: "Acordado el 20/10 (propuesta P9). En la home solo mostramos lo que está en curso (pagos procesando o cheques en camino), porque el usuario necesita saber qué está pasando con su plata.",
+      en: "Agreed Oct 20 (proposal P9). The home only shows what's in flight (processing payments or checks in the mail), because the user needs to know what's happening with their money." },
+    "Granola 20/10; board de alineación P9"),
+  logos: N("ask", ["Chap", "Equipo"],
+    { es: "Logos", en: "Logos" },
+    { es: "Logos: ¿los queremos, sí o no?", en: "Logos: do we want them or not?" },
+    { es: "Galileo no entrega logos. Plaid no sirve: solo enriquece transacciones de cuentas externas del usuario, nunca billers de SoFi. Opciones: iniciales con color (cero dependencia, es lo que se ve acá), logos curados para los ~50 billers más comunes, o un servicio pago de logos por dominio [conocimiento general]. Propuesta: iniciales en el MVP y decidir después si vale pagar un servicio.",
+      en: "Galileo supplies no logos. Plaid doesn't help: it only enriches transactions from the user's external accounts, never SoFi billers. Options: colored initials (no dependency, what you see here), curated logos for the ~50 most common billers, or a paid logo-by-domain service [general knowledge]. Proposal: initials in the MVP, decide later whether a service is worth paying for." },
+    "Rafa, análisis §1 #18; doc sesión 2 §14"),
+  categories: N("ask", ["SoFi"],
+    { es: "Categorías", en: "Categories" },
+    { es: "Sin categorías en el directorio", en: "No categories in the directory" },
+    { es: "La respuesta documentada de la búsqueda solo trae el ID RPPS y las máscaras del número de cuenta. Pedirle a SoFi el esquema completo de la respuesta: si trae rubro o dirección, podemos agrupar y ordenar (Luz, Celular, Internet). Si no, agrupamos por método de pago o dejamos que el usuario elija la categoría.",
+      en: "The documented search response only has the RPPS ID and the account-number masks. Ask SoFi for the full response schema: if it includes category or address we can group and sort (Electric, Phone, Internet). If not, we group by payment method or let the user pick a category." },
+    "SoFi endpoints (Search Biller Directory); pregunta C2"),
+  reminders: N("opp", ["Chap"],
+    { es: "Recordatorios", en: "Reminders" },
+    { es: "Recordatorio de vencimiento cargado por el usuario", en: "User-set due-date reminder" },
+    { es: "Sin eBills no sabemos cuándo vence. Pero el usuario sí: le pedimos el día del mes y le avisamos antes. Cubre el dolor que contó Allison el 14/10 (le cortaron el agua por olvidarse) sin otro proveedor. La contra: hay que guardar un dato propio, y Chap prefiere no guardar datos de Bill Pay.",
+      en: "Without eBills we don't know the due date, but the user does: we ask for the day of the month and remind them before it. It addresses the pain Allison described on Oct 14 (her water was shut off because she forgot) with no extra provider. Downside: we have to store our own data, and Chap prefers not to store Bill Pay data." },
+    "Reunión con Chap 14/10 (30:20); doc sesión 2 §14"),
+  pattern: N("opp", ["Equipo"],
+    { es: "Detectar patrón", en: "Spot a pattern" },
+    { es: "“Pagaste a Duke 3 meses seguidos cerca del 10”", en: "“You paid Duke 3 months in a row around the 10th”" },
+    { es: "Con el historial de Galileo (Get Bill Payment History) podemos sugerir un recordatorio o un autopay sin otro proveedor. Es una sugerencia; nunca se activa sola.",
+      en: "Galileo's history (Get Bill Payment History) lets us suggest a reminder or autopay with no extra provider. It's a suggestion; it never turns on by itself." },
+    "Doc sesión 2 §14"),
+  inflight: N("why", ["Equipo"],
+    { es: "En curso", en: "In flight" },
+    { es: "Lo que está en camino", en: "What's on its way" },
+    { es: "Pagos procesando y cheques enviados por correo y sin cobrar. Un cheque puede tardar semanas en cobrarse: es la razón principal por la que el usuario vuelve a la app.",
+      en: "Processing payments and checks that were mailed and not yet cashed. A check can take weeks to be cashed: that's the main reason a user comes back to the app." },
+    "SoFi lifecycle (paper check path)"),
+
+  /* ---- Add biller ---- */
+  addTypes: N("why", ["Equipo"],
+    { es: "3 entradas", en: "3 entry points" },
+    { es: "Tres formas de agregar, y el cheque solo como plan B", en: "Three ways to add, check only as plan B" },
+    { es: "1) Empresa de la red RPPS (~44.000): pago electrónico. 2) Empresa que no aparece en la búsqueda (error 421-01): cheque en papel. 3) Una persona (alquiler, contratista): cheque, con número de cuenta “NA”. La plata sale siempre de la cuenta Deposit; lo que cambia es cómo llega.",
+      en: "1) A company on the RPPS network (~44,000): electronic payment. 2) A company that doesn't show up in search (error 421-01): paper check. 3) A person (rent, contractor): check, with account number “NA”. Money always leaves the Deposit account; only the delivery changes." },
+    "SoFi lifecycle (Step 1); endpoints (Add Paper Biller); propuesta P4"),
+  paperForRpps: N("ask", ["Rafa", "SoFi"],
+    { es: "¿Cheque a empresa de la red?", en: "Check to a network biller?" },
+    { es: "¿Se puede mandar cheque a una empresa que sí está en RPPS?", en: "Can a check go to a biller that is on RPPS?" },
+    { es: "La documentación solo describe el cheque cuando la búsqueda no encuentra al biller. No dice si se puede crear un paper biller para alguien que ya está en la red. Propuesta: no ofrecerlo (es más lento, puede tener comisión y suma Sardine).",
+      en: "The docs only describe checks when search doesn't find the biller. They don't say whether a paper biller can be created for someone already on the network. Proposal: don't offer it (slower, may carry a fee, adds Sardine)." },
+    "SoFi lifecycle; doc sesión 2 §6"),
+  searchFields: N("why", ["Equipo"],
+    { es: "Campos", en: "Fields" },
+    { es: "Qué pide la búsqueda", en: "What search needs" },
+    { es: "Nombre obligatorio. Estado y número de cuenta opcionales: ayudan a separar empresas con el mismo nombre (hay varias “Duke Energy”), porque Galileo compara el número contra las máscaras de cada biller.",
+      en: "Name is required. State and account number are optional: they help tell apart billers with the same name (there are several “Duke Energy”), because Galileo compares the number against each biller's masks." },
+    "SoFi endpoints (Search Biller Directory)"),
+  dirSchema: N("verify", ["SoFi"],
+    { es: "Ciudad sin confirmar", en: "City unconfirmed" },
+    { es: "¿La búsqueda devuelve ciudad y rubro?", en: "Does search return city and category?" },
+    { es: "El prototipo de Chap muestra ciudad y rubro en los resultados, pero la respuesta documentada solo trae el ID y las máscaras. Sin ciudad, elegir entre tres “Duke Energy” es adivinar. Va en el pedido del esquema completo.",
+      en: "Chap's prototype shows city and category in the results, but the documented response only has the ID and the masks. Without a city, choosing between three “Duke Energy” is guesswork. Part of the full-schema request." },
+    "SoFi endpoints; prototipo de Chap (video 20/10)"),
+  acctNoEdit: N("risk", ["Equipo"],
+    { es: "No se edita", en: "Can't be edited" },
+    { es: "El número de cuenta no se verifica ni se edita", en: "The account number is neither verified nor editable" },
+    { es: "Galileo valida el formato (error 485-03) pero no que la cuenta exista en ese biller, y no se puede cambiar después. Un error de tipeo manda la plata a la cuenta de otra persona en esa empresa, y se resuelve fuera de la app. Propuesta: pedirlo dos veces y explicar que para corregirlo hay que borrar el biller y agregarlo de nuevo.",
+      en: "Galileo validates the format (error 485-03) but not that the account exists at that biller, and it can't be changed later. A typo sends money to someone else's account at that company, and fixing it happens outside the app. Proposal: ask for it twice and explain that fixing it means removing the biller and adding it again." },
+    "SoFi endpoints (Add RPPS Biller); Rafa #19–20"),
+  stepUp: N("why", ["Equipo"],
+    { es: "Código SMS", en: "SMS code" },
+    { es: "Verificación al agregar un destinatario", en: "Verification when adding a payee" },
+    { es: "Agregar un destinatario nuevo dispara un step-up según el consultor de seguridad del cliente (KB CP3-PRD1). Acá usamos un código de 6 dígitos.",
+      en: "Adding a new payee triggers step-up authentication per the client's security consultant (KB CP3-PRD1). Here we use a 6-digit code." },
+    "Doc sesión 2 §14 (CP3-PRD1)"),
+
+  /* ---- Checks ---- */
+  checkFields: N("why", ["Equipo"],
+    { es: "Datos del cheque", en: "Check details" },
+    { es: "Qué se necesita para un cheque", en: "What a check needs" },
+    { es: "Nombre del destinatario, calle (obligatoria, address1), ciudad, estado y ZIP. Solo direcciones de EE. UU. El número de cuenta puede ser “NA” para personas. El memo es opcional, y los cheques que genera el autopay salen sin memo. Galileo no valida la dirección: si está mal, el cheque vuelve.",
+      en: "Payee name, street (required, address1), city, state and ZIP. US addresses only. Account number can be “NA” for people. Memo is optional, and checks generated by autopay have no memo. Galileo doesn't validate the address: if it's wrong, the check comes back." },
+    "SoFi endpoints (Add Paper Biller); overview"),
+  sardine: N("ask", ["Chap"],
+    { es: "Sardine", en: "Sardine" },
+    { es: "Sardine: dónde impacta y qué falta", en: "Sardine: where it hits and what's missing" },
+    { es: "Chap (14/10): todo destinatario de un cheque “must be checked by Sardine”. Mandamos nombre y dirección y recibimos sí o no, “instant mostly”. Impacta en el backend: una llamada nueva antes de crear el paper biller o el pago, y un registro de auditoría que hay que guardar. Falta: el endpoint (Chap lo iba a pasar), el formato de respuesta, la demora, si se controla por cheque o por destinatario, y si se vuelve a controlar a alguien ya aprobado.",
+      en: "Chap (Oct 14): every check recipient “must be checked by Sardine”. We send name and address and get a yes or no, “instant mostly”. Backend impact: a new call before creating the paper biller or payment, plus an audit record we have to store. Missing: the endpoint (Chap was sending it), response format, latency, whether it's per check or per payee, and whether an approved payee is re-checked." },
+    "Reunión con Chap 14/10 (11:46, 27:56); pregunta C3"),
+  sardineDecline: N("risk", ["Chap"],
+    { es: "Sin motivo", en: "No reason given" },
+    { es: "El rechazo no dice por qué", en: "The decline doesn't say why" },
+    { es: "Si Sardine dice que no, no revelamos el motivo: puede ser un control de PEP o de sanciones, y decirlo alerta a la persona. Chap: “probably not the reasoning, but at least that there's some reason this was declined”.",
+      en: "If Sardine says no, we don't reveal why: it may be a PEP or sanctions hit, and saying so tips the person off. Chap: “probably not the reasoning, but at least that there's some reason this was declined”." },
+    "Reunión con Chap 14/10 (12:34)"),
+  sardineDown: N("ask", ["Chap", "Rafa"],
+    { es: "Si no responde", en: "If it doesn't answer" },
+    { es: "¿Qué hacemos si Sardine no responde?", en: "What if Sardine doesn't answer?" },
+    { es: "No está definido. Propuesta: no crear el cheque, guardar el destinatario como pendiente y reintentar; nunca mandar un cheque sin aprobación. Falta acordar si el monto ocupa el límite diario mientras espera.",
+      en: "Not defined. Proposal: don't create the check, keep the payee as pending and retry; never send a check without approval. Still to agree: whether the amount takes up the daily limit while it waits." },
+    "Rafa #25–26; board de alineación"),
+  checkTiming: N("why", ["Equipo"],
+    { es: "Tiempos", en: "Timing" },
+    { es: "Cuándo sale la plata y cuándo llega el cheque", en: "When money leaves and when the check arrives" },
+    { es: "La plata se debita antes de imprimir: “funds are withdrawn from the account before the check is issued”, así que el cheque nunca rebota. Se imprime a las 06:00 de cada día hábil; lo pedido antes de medianoche sale en la corrida del día hábil siguiente. Imprimir y despachar tarda 2–3 días hábiles. El plazo total de llegada es de 1 a 10 días; no se suman.",
+      en: "Money is debited before printing: “funds are withdrawn from the account before the check is issued”, so checks never bounce. Printing runs at 06:00 every business day; requests before midnight go in the next business day's run. Printing and mailing take 2–3 business days. Total arrival is 1–10 days; they don't add up." },
+    "SoFi overview; lifecycle (paper check path)"),
+  checkFee: N("fee", ["Mike", "Chap"],
+    { es: "Comisión cheque", en: "Check fee" },
+    { es: "Comisión por cheque (CHK) y por cancelarlo (CHC)", en: "Check fee (CHK) and cancellation fee (CHC)" },
+    { es: "Galileo puede cobrar por cada cheque y por cancelar uno. Si DingoBlu cobra o no es una decisión de negocio. Si cobra, se muestra antes de confirmar y antes de cancelar.",
+      en: "Galileo can charge per check and per cancellation. Whether DingoBlu charges is a business decision. If it does, it shows before confirming and before canceling." },
+    "SoFi lifecycle (Fees); pregunta M4"),
+  checkExpire: N("why", ["Chap"],
+    { es: "Vence a 180 días", en: "Expires at 180 days" },
+    { es: "Cheques vencidos, devueltos y perdidos", en: "Expired, returned and lost checks" },
+    { es: "Si nadie lo cobra en 180 días vence (BPEX) y la plata vuelve (BADJ). Si el correo lo devuelve (BPCR), la plata vuelve. Si se pierde: cancelar, esperar 1–3 días a que vuelva la plata y mandarlo de nuevo. Falta: quién opera el CST (la herramienta de soporte de SoFi) para DingoBlu.",
+      en: "If nobody cashes it in 180 days it expires (BPEX) and money returns (BADJ). If the post office returns it (BPCR), money returns. If it's lost: cancel, wait 1–3 days for the money and resend. Missing: who runs the CST (SoFi's support tool) for DingoBlu." },
+    "SoFi overview (FAQ); lifecycle; pregunta C7"),
+  cancelCheck: N("risk", ["Chap"],
+    { es: "Cancelar cheque", en: "Cancel check" },
+    { es: "Cancelar un cheque depende del estado", en: "Canceling a check depends on its state" },
+    { es: "Creado, esperando impresión o enviado: se cancela por API. Ya impreso (estado Q): solo desde el CST de SoFi, no por API. Después pasa a “cancelación pedida” y SoFi confirma con el banco en ~2 días. Puede haber comisión (CHC).",
+      en: "Created, waiting to print or mailed: cancel via API. Already printed (state Q): only from SoFi's CST, not via API. Then it becomes “cancellation requested” and SoFi confirms with the bank in ~2 days. A fee (CHC) may apply." },
+    "SoFi lifecycle (Cancellation)"),
+  checkPerson: N("risk", ["Chap"],
+    { es: "Más AML", en: "More AML" },
+    { es: "Pagarle a una persona se parece a un P2P", en: "Paying a person looks like P2P" },
+    { es: "Un cheque al dueño del departamento o a un contratista es mandar plata a alguien, no pagar una factura. Por eso existe el control de Sardine, y puede haber más escrutinio AML. ¿La cuenta es personal o de negocio?",
+      en: "A check to a landlord or contractor is sending money to someone, not paying a bill. That's why the Sardine check exists, and there may be more AML scrutiny. Is the account personal or business?" },
+    "Rafa, análisis §2 #8"),
+
+  /* ---- Pay ---- */
+  freeAmount: N("why", ["Equipo"],
+    { es: "Monto libre", en: "Free amount" },
+    { es: "Sin factura, el monto lo decide el usuario", en: "Without a bill, the user decides the amount" },
+    { es: "Galileo acepta cualquier monto positivo hasta $25.000 por pago (LIMBP). No conoce la factura ni su total, así que no existe “pago parcial”: si la empresa acepta menos es un tema entre el usuario y la empresa. Sugerimos el último monto pagado como atajo.",
+      en: "Galileo accepts any positive amount up to $25,000 per payment (LIMBP). It doesn't know the bill or its total, so there's no “partial payment”: whether the biller accepts less is between the user and the biller. We suggest the last amount paid as a shortcut." },
+    "SoFi lifecycle (validation rules); propuesta P3"),
+  depositOnly: N("ask", ["Mike", "Chap"],
+    { es: "Solo Deposit", en: "Deposit only" },
+    { es: "Se paga solo con el saldo de la cuenta Deposit", en: "Pay only from the Deposit balance" },
+    { es: "Sin pagar desde Savings y sin una segunda cuenta (propuesta P5). Chap quiere “mover plata desde ahorros” cuando no alcanza, pero eso es una transferencia, y Transfer está fuera del contenedor del MVP (CP3). ¿Entra en Bill Pay o llega cuando exista Transfer?",
+      en: "No paying from Savings and no second account (proposal P5). Chap wants “move money in from savings” when it's short, but that's a transfer, and Transfer is outside the MVP container (CP3). Is it part of Bill Pay or does it come with Transfer?" },
+    "Board P5 y M3; README CP3"),
+  insufficient: N("why", ["Chap"],
+    { es: "Sin fondos", en: "Insufficient funds" },
+    { es: "Si no alcanza, no se paga y no hay reintento", en: "If it's short, it doesn't go out and there's no retry" },
+    { es: "Un pago de hoy sin saldo falla con 433-05; uno programado falla ese día con BSPF. Galileo no reintenta. Chap: “we just block the bill”. Mostramos cuánto falta, sin ofrecer ahorros hasta que exista Transfer.",
+      en: "A payment today without balance fails with 433-05; a scheduled one fails on its day with BSPF. Galileo doesn't retry. Chap: “we just block the bill”. We show how much is missing, without offering Savings until Transfer exists." },
+    "SoFi lifecycle; overview (FAQ); reunión 14/10"),
+  dailyLimit: N("ask", ["Chap"],
+    { es: "Límite $10k", en: "$10k limit" },
+    { es: "Límite diario de $10.000", en: "$10,000 daily limit" },
+    { es: "Chap: “max amount is 10k per day”, y los cheques cuentan (respondió “Yes”). Lo construimos nosotros: Galileo solo limita cada pago a $25.000. Falta: en qué zona horaria se cuenta el día, si un programado cuenta el día que se crea o el día que se ejecuta, si cancelar libera el cupo y si un cheque cuenta antes de que Sardine lo apruebe.",
+      en: "Chap: “max amount is 10k per day”, and checks count (he answered “Yes”). We build it: Galileo only caps each payment at $25,000. Missing: which time zone defines the day, whether a scheduled payment counts on creation or on its run date, whether canceling frees the amount, and whether a check counts before Sardine approves it." },
+    "Reunión 14/10 (27:48–28:12); pregunta C4"),
+  fees: N("fee", ["Mike", "Chap"],
+    { es: "Comisión", en: "Fee" },
+    { es: "¿Hay comisión por pago electrónico (BPY)?", en: "Is there an electronic payment fee (BPY)?" },
+    { es: "Galileo la soporta; cobrarla es decisión de DingoBlu. Si existe, va en esta pantalla antes de confirmar. Si el monto entra pero la comisión no, el parámetro BPPPF puede diferirla. El prototipo de Mati dice “No fee” sin que esté confirmado.",
+      en: "Galileo supports it; charging it is DingoBlu's call. If it exists, it goes on this screen before confirming. If the amount fits but the fee doesn't, the BPPPF parameter can defer it. Mati's prototype says “No fee” without confirmation." },
+    "SoFi lifecycle (Fees); propuesta P10; pregunta M4"),
+  arrival: N("risk", ["Equipo"],
+    { es: "1 a 10 días", en: "1 to 10 days" },
+    { es: "Nunca prometer una fecha exacta de llegada", en: "Never promise an exact arrival date" },
+    { es: "El pago le llega a la empresa en 1 a 10 días según cómo esté configurada. Texto: “suele llegar en 1 a 10 días”. Si el usuario paga cerca del vencimiento (con recordatorio o eBill), avisamos que puede llegar tarde. ¿DingoBlu cubre recargos si llega tarde? (pregunta M6).",
+      en: "The payment reaches the biller in 1–10 days depending on its setup. Copy: “usually arrives in 1–10 days”. If the user pays close to the due date (reminder or eBill), we warn it may arrive late. Does DingoBlu cover late fees? (question M6)." },
+    "SoFi overview; board P7 y M6"),
+  noUndo: N("why", ["Equipo"],
+    { es: "Sin deshacer", en: "No undo" },
+    { es: "Un pago de hoy no se puede deshacer", en: "Today's payment can't be undone" },
+    { es: "Los lotes salen a los :08 y :38 de cada hora y solo se cancela en estado N, así que la ventana es de minutos e impredecible. Por eso la revisión es clara antes de confirmar, y “Cancelar” existe solo en pagos programados, hasta el día anterior (propuesta P6, como Chase y Mercado Pago).",
+      en: "Batches run at :08 and :38 every hour and only state N can be canceled, so the window is minutes and unpredictable. So the review is clear before confirming, and “Cancel” exists only on scheduled payments, until the day before (proposal P6, like Chase and Mercado Pago)." },
+    "SoFi lifecycle; board P6"),
+  idempotency: N("risk", ["Rafa"],
+    { es: "Doble toque", en: "Double tap" },
+    { es: "Pagos duplicados por doble toque o red lenta", en: "Duplicate payments from double taps or bad network" },
+    { es: "Galileo no documenta una clave de idempotencia: la tenemos que poner nosotros, y bloquear el botón mientras se envía.",
+      en: "Galileo documents no idempotency key: we have to add one, and lock the button while sending." },
+    "Rafa #6"),
+  leftAfter: N("why", ["Equipo"],
+    { es: "¿Me alcanza?", en: "Can I afford it?" },
+    { es: "“Te quedan $X después de pagar”", en: "“$X left after paying”" },
+    { es: "Responde “¿me alcanza?” justo cuando importa, sin tarjeta de saldo en la home (idea del prototipo de Chap). Si hay comisión, hay que restarla también.",
+      en: "Answers “can I afford it?” right when it matters, without a balance card on the home (idea from Chap's prototype). If there's a fee, it has to be subtracted too." },
+    "Prototipo de Chap (video 20/10); Rafa #7, #9"),
+  schedWeekend: N("ask", ["Chap"],
+    { es: "¿Fin de semana?", en: "Weekends?" },
+    { es: "¿El programador corre fines de semana y feriados?", en: "Does the scheduler run on weekends and holidays?" },
+    { es: "Los lotes electrónicos a Mastercard salen todos los días, incluso fines de semana. El cheque solo se imprime en días hábiles. No está claro qué pasa con un pago programado para un sábado (el prototipo de Mati dice que sale ese día).",
+      en: "Electronic batches to Mastercard run every day, weekends included. Checks only print on business days. It's unclear what happens to a payment scheduled for a Saturday (Mati's prototype says it goes that day)." },
+    "SoFi overview; pregunta C8"),
+
+  /* ---- Status ---- */
+  neverDelivered: N("risk", ["Chap"],
+    { es: "Nunca “Entregado”", en: "Never “Delivered”" },
+    { es: "No existe “Entregado” en el pago electrónico", en: "“Delivered” doesn't exist for electronic payments" },
+    { es: "Galileo nunca confirma que la empresa recibió un pago electrónico: solo que salió hacia Mastercard (estado P). El prototipo de Chap muestra “Delivered” y “Arrived at Verizon”: hay que acordar con él “Enviado · suele llegar en 1 a 10 días” (propuesta P7). El cheque sí puede mostrar cobrado.",
+      en: "Galileo never confirms the biller received an electronic payment, only that it left for Mastercard (state P). Chap's prototype shows “Delivered” and “Arrived at Verizon”: we need to agree with him on “Sent · usually arrives in 1–10 days” (proposal P7). Checks can show cashed." },
+    "SoFi overview (FAQ); reunión 14/10 (24:24, 26:53); board P7"),
+  webhooks: N("why", ["Rafa"],
+    { es: "Webhooks", en: "Webhooks" },
+    { es: "Los estados llegan por webhooks", en: "Statuses arrive via webhooks" },
+    { es: "Events API de SoFi: BPCQ (creado), BPAY (debitado), BRRJ (rechazado), BSPF (programado falló), BPCM (cheque enviado), BPCC (cobrado), BPCR (devuelto), BPEX (vencido), BADJ (plata devuelta). Para notificar con la app cerrada hace falta un backend que los reciba; consultar al entrar solo sirve para pintar la pantalla. Pueden llegar tarde, repetidos o desordenados (un BRRJ puede llegar horas después de “Enviado”): los estados solo avanzan.",
+      en: "SoFi Events API: BPCQ (created), BPAY (debited), BRRJ (rejected), BSPF (scheduled failed), BPCM (check mailed), BPCC (cashed), BPCR (returned), BPEX (expired), BADJ (money returned). Notifying with the app closed needs a backend that receives them; polling on open only paints the screen. They can arrive late, duplicated or out of order (a BRRJ can come hours after “Sent”): statuses only move forward." },
+    "SoFi Events API; lifecycle; Rafa #31–32"),
+  checkNoTrack: N("why", ["Equipo"],
+    { es: "Sin rastreo postal", en: "No postal tracking" },
+    { es: "¿Cómo se sigue algo físico?", en: "How do you track something physical?" },
+    { es: "No hay rastreo del correo. SoFi informa lo que ve el banco emisor: que lo imprimió y despachó (BPCM) y que volvió cobrado por compensación bancaria (BPCC). Si la empresa lo recibió pero no lo depositó, para nosotros sigue “enviado”. No hay imágenes del cheque.",
+      en: "There's no mail tracking. SoFi reports what the issuing bank sees: that it was printed and mailed (BPCM) and that it came back cashed through clearing (BPCC). If the biller got it but didn't deposit it, to us it's still “mailed”. No check images." },
+    "SoFi overview; lifecycle"),
+
+  /* ---- Autopay (Plan A) ---- */
+  autopayFixed: N("why", ["Equipo"],
+    { es: "Monto fijo", en: "Fixed amount" },
+    { es: "El autopay es de monto fijo", en: "Autopay is a fixed amount" },
+    { es: "Es lo único que soporta SoFi: un monto fijo, semanal, mensual, trimestral o anual, hasta 5 años. Sin eBill no hay de dónde sacar “lo que diga la factura”. Sirve para cuentas que no cambian (alquiler, celular, seguro); para la luz no.",
+      en: "It's the only thing SoFi supports: a fixed amount, weekly, monthly, quarterly or yearly, up to 5 years. Without an eBill there's no source for “whatever the bill says”. Good for bills that don't change (rent, phone, insurance), not for electricity." },
+    "SoFi lifecycle (Scheduled payment)"),
+  autopayScope: N("ask", ["Mike", "Chap"],
+    { es: "¿Día 1?", en: "Day one?" },
+    { es: "¿El autopay entra el día 1?", en: "Is autopay in on day one?" },
+    { es: "Mike (21/10): probablemente queda fuera del día 1, justamente porque no hay cómo ingerir la factura. Hay que acordarlo con Chap: el autopay de monto fijo es posible con SoFi, pero no es el autopay flexible del prototipo.",
+      en: "Mike (Oct 21): probably out of day one, precisely because there's no way to ingest the bill. Needs agreement with Chap: fixed-amount autopay is possible with SoFi, but it's not the prototype's flexible autopay." },
+    "Granola 21/10 (Mike)"),
+  autopaySkip: N("risk", ["Chap"],
+    { es: "No se saltea", en: "Can't skip one" },
+    { es: "No se puede saltear una cuota", en: "One run can't be skipped" },
+    { es: "Cada cuota no tiene ID hasta su día, así que no se cancela una sola: se termina la serie completa. Cambiar el monto cambia todas las que siguen.",
+      en: "Each run has no ID until its day, so a single one can't be canceled: the whole series ends. Changing the amount changes all the next ones." },
+    "SoFi lifecycle (Recurring series)"),
+  autopayFunds: N("risk", ["Chap"],
+    { es: "Saldo ese día", en: "Balance that day" },
+    { es: "El saldo se revisa recién el día del pago", en: "Balance is checked only on the day" },
+    { es: "No hay control de saldo hasta la fecha de proceso. Si ese día no alcanza, falla (BSPF) y no se reintenta. Si se permite sobregiro en recurrentes depende del parámetro AAIGB del programa: ¿cómo está configurado para DingoBlu? (pregunta C5). Propuesta: avisar 2 días antes.",
+      en: "There's no balance check until the process date. If it's short that day, it fails (BSPF) with no retry. Whether recurring payments can overdraw depends on the program's AAIGB parameter: how is it set for DingoBlu? (question C5). Proposal: warn 2 days before." },
+    "SoFi lifecycle (Balance timing); pregunta C5"),
+  removeBiller: N("risk", ["Equipo"],
+    { es: "Programados", en: "Scheduled" },
+    { es: "Borrar un biller no cancela sus pagos programados", en: "Removing a biller doesn't cancel its scheduled payments" },
+    { es: "En Galileo los pagos programados siguen saliendo. Nosotros los cancelamos antes de borrar el biller, y se lo decimos al usuario.",
+      en: "In Galileo scheduled payments keep going out. We cancel them before removing the biller, and tell the user." },
+    "SoFi lifecycle (Deleting a biller)"),
+
+  /* ---- Plan B ---- */
+  ebCoverage: N("risk", ["Equipo"],
+    { es: "Cobertura parcial", en: "Partial coverage" },
+    { es: "Algunas empresas tienen eBill y otras no", en: "Some billers have eBills and some don't" },
+    { es: "La home mezcla dos modos para siempre: facturas con monto y vencimiento, y billers sin factura donde el usuario escribe el monto. El riesgo: que “no veo factura” se lea como “no debo nada”. Chap (14/10): “most of them don't”.",
+      en: "The home mixes two modes forever: bills with amount and due date, and billers without bills where the user types the amount. The risk: “I see no bill” read as “I owe nothing”. Chap (Oct 14): “most of them don't”." },
+    "Rafa §3; reunión 14/10 (18:19)"),
+  ebStale: N("risk", ["Equipo"],
+    { es: "Monto viejo", en: "Stale amount" },
+    { es: "El monto puede estar desactualizado", en: "The amount may be out of date" },
+    { es: "Si mostramos “$142,18 a pagar”, el usuario lo toma como verdad. Si está viejo o no incluye recargos, paga de menos y culpa a DingoBlu. Propuesta: mostrar de dónde sale y cuándo se actualizó.",
+      en: "If we show “$142.18 due”, the user takes it as truth. If it's old or misses late fees, they underpay and blame DingoBlu. Proposal: show where it comes from and when it was updated." },
+    "Rafa §3"),
+  ebMatch: N("risk", ["Rafa"],
+    { es: "Dos directorios", en: "Two directories" },
+    { es: "Emparejar billers de eBills con billers RPPS", en: "Matching eBill billers to RPPS billers" },
+    { es: "El proveedor de eBills tiene su propio directorio. Cada factura hay que pagarla al biller RPPS correcto. Un emparejamiento equivocado hace que una factura mostrada bajo una empresa se pague a otra.",
+      en: "The eBill provider has its own directory. Each bill has to be paid to the right RPPS biller. A wrong match means a bill shown under one company is paid to another." },
+    "Rafa §3; pregunta C1"),
+  ebConsent: N("ask", ["Chap", "Mike"],
+    { es: "Consentimiento y datos", en: "Consent and data" },
+    { es: "Conectar la cuenta con cada empresa", en: "Connecting the account at each biller" },
+    { es: "Ver eBills suele requerir que el usuario conecte su cuenta con cada empresa (consentimiento y a veces usuario y contraseña). Es fricción y son datos que hay que guardar, lo que choca con el criterio de Chap de no almacenar. Depende del proveedor.",
+      en: "Seeing eBills usually requires the user to connect their account at each biller (consent and sometimes username and password). It's friction and it's data to store, which clashes with Chap's no-storage stance. Depends on the provider." },
+    "Rafa §3"),
+  ebFull: N("why", ["Equipo"],
+    { es: "Se paga el total", en: "Pay in full" },
+    { es: "Con eBill se paga el total", en: "With an eBill you pay in full" },
+    { es: "Propuesta P2 (no negociable): si sabemos el monto, no hay pago parcial. Única excepción: tarjetas y préstamos que informan un mínimo, si el proveedor lo manda; ahí se ofrece mínimo o total. Choca con el prototipo de Mati, que deja pagar menos.",
+      en: "Proposal P2 (non-negotiable): if we know the amount, no partial payments. Only exception: cards and loans that report a minimum, if the provider sends it; then offer minimum or full. Conflicts with Mati's prototype, which allows paying less." },
+    "Board P2; explicación de flujos §3"),
+  ebAutopay: N("verify", ["Rafa", "Chap"],
+    { es: "Autopay flexible", en: "Flexible autopay" },
+    { es: "“Pagar lo que diga la factura” lo armamos nosotros", en: "“Pay whatever the bill says” is ours to build" },
+    { es: "El recurrente de SoFi es de monto fijo. Para pagar el monto de cada factura habría que crear un pago programado por cada eBill que llega (Create Bill Payment con fecha futura). Es una inferencia nuestra: validar con Rafa y con SoFi. Con tope máximo opcional.",
+      en: "SoFi recurring is fixed-amount. To pay each bill's amount we'd create one scheduled payment per incoming eBill (Create Bill Payment with a future date). That's our inference: validate with Rafa and SoFi. Optional maximum cap." },
+    "SoFi lifecycle; pregunta C6"),
+  ebSeveral: N("risk", ["Rafa"],
+    { es: "Falla parcial", en: "Partial failure" },
+    { es: "Pagar varias: una puede fallar y las otras salir", en: "Paying several: one can fail while others go" },
+    { es: "No hay pago en lote: es una llamada por factura. Si el saldo alcanza para algunas, hay que decidir qué pasa con el resto. Propuesta: avisar antes de confirmar si no alcanza para todas.",
+      en: "There's no batch payment: one call per bill. If the balance covers only some, we must decide what happens with the rest. Proposal: warn before confirming if it doesn't cover all." },
+    "Rafa §1 #6"),
+  ebOrder: N("why", ["Equipo"],
+    { es: "Orden", en: "Order" },
+    { es: "Una sola lista ordenada por estado", en: "One list ordered by state" },
+    { es: "Acordado el 20/10 (H1): falló → vencida o vence hoy → próximas. Total pendiente arriba (este mes + vencidas). “Estás al día” cuando no hay nada.",
+      en: "Agreed Oct 20 (H1): failed → overdue or due today → upcoming. Total pending at the top (this month + overdue). “You're all caught up” when nothing is pending." },
+    "Board de alineación H1"),
+  ebDismiss: N("ask", ["Chap"],
+    { es: "Ya la pagué", en: "Already paid" },
+    { es: "“Ya la pagué”: ¿el proveedor se entera?", en: "“I already paid it”: does the provider know?" },
+    { es: "Saca la factura de pendientes sin cobrar nada (H3). Hay que ver si el proveedor de eBills la marca como pagada o si solo la ocultamos nosotros (otro dato que guardar).",
+      en: "Removes the bill from pending without charging (H3). Need to check whether the eBill provider marks it paid or we just hide it (more data to store)." },
+    "Board de alineación H3"),
+  ebSchedule: N("risk", ["Equipo"],
+    { es: "Puede llegar tarde", en: "May arrive late" },
+    { es: "Programar para el vencimiento puede llegar tarde", en: "Scheduling on the due date may arrive late" },
+    { es: "El pago tarda 1 a 10 días en llegar. Si se programa el mismo día del vencimiento, puede llegar después. Propuesta: programar con margen y decirlo en la pantalla.",
+      en: "Payments take 1–10 days to arrive. Scheduled on the due date, it may land after it. Proposal: schedule with margin and say so on screen." },
+    "SoFi overview")
+};
+
+/* ================= Static data ================= */
+const PAL = [["#FFF1D6", "#8A5A00"], ["#E8F4FE", "#155DB0"], ["#E6F3F7", "#0B6E8A"], ["#EEF0FF", "#3F3FB5"], ["#E3F6EC", "#14703F"], ["#FDECEA", "#B42318"]];
+const initials = n => n.replace(/[^A-Za-zÀ-ÿ& ]/g, "").split(" ").filter(w => w && !["of", "and", "the", "&"].includes(w.toLowerCase())).map(w => w[0]).join("").slice(0, 2).toUpperCase();
+const palFor = id => PAL[[...id].reduce((s, c) => s + c.charCodeAt(0), 0) % PAL.length];
+/* Directory sample (RPPS). loc is what Chap's prototype shows; it is not confirmed in the API. eb = has eBill (Plan B only). */
+const DIR = [
+  { id: "duke", name: "Duke Energy Progress", loc: "Raleigh, NC", cat: { es: "Luz", en: "Electric" }, mask: "10", eb: true },
+  { id: "duke-car", name: "Duke Energy Carolinas", loc: "Charlotte, NC", cat: { es: "Luz", en: "Electric" }, mask: "10", eb: true },
+  { id: "duke-fl", name: "Duke Energy Florida", loc: "St. Petersburg, FL", cat: { es: "Luz", en: "Electric" }, mask: "12", eb: true },
+  { id: "verizon", name: "Verizon Wireless", loc: "Basking Ridge, NJ", cat: { es: "Celular", en: "Phone" }, mask: "10", eb: true },
+  { id: "tmobile", name: "T-Mobile", loc: "Bellevue, WA", cat: { es: "Celular", en: "Phone" }, mask: "9", eb: true },
+  { id: "spectrum", name: "Spectrum", loc: "Stamford, CT", cat: { es: "Internet", en: "Internet" }, mask: "16", eb: false },
+  { id: "xfinity", name: "Xfinity", loc: "Philadelphia, PA", cat: { es: "Internet", en: "Internet" }, mask: "16", eb: false },
+  { id: "raleigh", name: "City of Raleigh Utilities", loc: "Raleigh, NC", cat: { es: "Agua", en: "Water" }, mask: "8", eb: false },
+  { id: "progressive", name: "Progressive Insurance", loc: "Mayfield, OH", cat: { es: "Seguro", en: "Insurance" }, mask: "9", eb: true },
+  { id: "statefarm", name: "State Farm Insurance", loc: "Bloomington, IL", cat: { es: "Seguro", en: "Insurance" }, mask: "10", eb: true },
+  { id: "capone", name: "Capital One", loc: "McLean, VA", cat: { es: "Tarjeta", en: "Credit card" }, mask: "16", eb: true },
+  { id: "fpl", name: "Florida Power & Light", loc: "Juno Beach, FL", cat: { es: "Luz", en: "Electric" }, mask: "10", eb: true }
+];
+const dirById = id => DIR.find(x => x.id === id);
+
+function seed() {
+  const base = id => ({ id, name: dirById(id).name, kind: "rpps", acct: String(1000 + (id.length * 733) % 9000), eb: dirById(id).eb });
+  const carlos = { id: "carlos", name: "Carlos Méndez", kind: "check", person: true, acct: "NA", addr: "1420 SW 8th St, Miami, FL 33135", memo: { es: "Alquiler", en: "Rent" }, sardineAt: d(-60) };
+  const P = (id, biller, amount, date, status, x = {}) => ({ id, biller, amount, date, status, created: date, ...x });
+  if (S.plan === "A") return {
+    balance: S.low ? 120 : 1284.60,
+    billers: [
+      { ...base("duke"), reminder: { day: 10, before: 2 } },
+      { ...base("verizon"), autopay: { amount: 89.99, freq: "M", next: "2026-11-01", end: "2027-10-01" } },
+      { ...base("spectrum") },
+      carlos
+    ],
+    payments: [
+      P("p1", "spectrum", 79.99, d(6), "scheduled"),
+      P("p2", "verizon", 89.99, d(-20), "sent", { auto: true }),
+      P("p3", "duke", 142.18, d(-28), "sent"),
+      P("p4", "carlos", 1450, d(-50), "cashed", { mailed: d(-47), cashed: d(-41) }),
+      P("p5", "carlos", 1450, d(-3), "mailed", { mailed: d(-1) }),
+      P("p6", "duke", 131.06, d(-59), "sent"),
+      P("p7", "verizon", 89.99, d(-51), "failed", { auto: true }),
+      P("p8", "spectrum", 79.99, d(-24), "sent")
+    ],
+    bills: []
+  };
+  return {
+    balance: S.low ? 120 : 1284.60,
+    billers: [
+      { ...base("verizon") }, { ...base("duke") }, { ...base("capone") },
+      { ...base("progressive"), autopay: { mode: "full", before: 2, max: null } },
+      { ...base("tmobile") }, { ...base("spectrum") }, carlos
+    ],
+    bills: [
+      { id: "b1", biller: "verizon", amount: 85.01, due: d(-2), upd: "08:12" },
+      { id: "b2", biller: "duke", amount: 142.18, due: d(0), upd: "07:40" },
+      { id: "b5", biller: "tmobile", amount: 65.00, due: d(3), upd: "06:55" },
+      { id: "b3", biller: "capone", amount: 912.40, min: 35, due: d(8), upd: "08:01" },
+      { id: "b4", biller: "progressive", amount: 128.40, due: d(9), upd: "05:30" }
+    ],
+    payments: [
+      P("q1", "tmobile", 65, d(-1), "failed", { bill: "b5" }),
+      P("q2", "verizon", 85.01, d(-33), "sent"),
+      P("q3", "duke", 131.06, d(-28), "sent"),
+      P("q4", "carlos", 1450, d(-50), "cashed", { mailed: d(-47), cashed: d(-41) }),
+      P("q5", "spectrum", 79.99, d(-24), "sent"),
+      P("q6", "progressive", 128.40, d(-31), "sent", { auto: true })
+    ]
+  };
+}
+
+/* ================= State ================= */
+const S = {
+  lang: localStorage.getItem("bpab-lang") || "es", tab: "proto", plan: null, notes: true, low: false, sardine: "ok",
+  stack: [{ r: "start", p: {} }], data: null, pick: null, draft: {}, cur: [], dir: 1
+};
+let seq = 100;
+const nid = () => `n${++seq}`;
+const biller = id => S.data.billers.find(b => b.id === id);
+const paysOf = id => S.data.payments.filter(p => p.biller === id).sort((a, b) => b.date.localeCompare(a.date));
+const billById = id => S.data.bills.find(b => b.id === id);
+const usedToday = () => S.data.payments.filter(p => p.created === TODAY && !["canceled", "cancelReq", "failed"].includes(p.status)).reduce((s, p) => s + p.amount, 0);
+const limitLeft = () => round2(10000 - usedToday());
+
+/* ================= Rendering primitives ================= */
+function pin(id) {
+  const n = NOTES[id]; if (!n) return "";
+  if (!S.cur.includes(id)) S.cur.push(id);
+  return `<span role="button" tabindex="0" class="pin k-${n.k}" data-note="${id}" title="${esc(T(n.t))}">${KIND[n.k].icon}${esc(T(n.s))}</span>`;
+}
+const pins = (...ids) => `<div class="pins">${ids.map(pin).join("")}</div>`;
+function logo(b, cls = "") {
+  if (b.person) return `<span class="logo person ${cls}" aria-hidden="true">${IC.user}</span>`;
+  const [bg, fg] = palFor(b.id);
+  return `<span class="logo ${cls}" style="background:${bg};color:${fg}" aria-hidden="true">${esc(initials(b.name))}</span>`;
+}
+const methodTag = b => b.kind === "check"
+  ? `<span class="method">${IC.mail}${L("Cheque en papel", "Paper check")}</span>`
+  : `<span class="method">${IC.bolt}${L("Electrónico", "Electronic")}</span>`;
+const backBtn = () => `<button class="icon-btn back" type="button" data-act="back" aria-label="${L("Volver", "Back")}">${IC.back}</button>`;
+function row({ act, id, lead, name, sub, amt = "", amtMuted = false, end = "", chevron = true, extraCls = "" }) {
+  return `<li><button class="row ${extraCls}" type="button" data-act="${act}" data-id="${id}" style="grid-template-columns:${extraCls ? "auto " : ""}auto minmax(0,1fr) auto${chevron ? " auto" : ""}">${lead}<span class="r-main"><span class="r-name">${name}</span><span class="r-sub">${sub}</span></span><span class="r-end">${amt ? `<span class="r-amt num${amtMuted ? " muted" : ""}">${amt}</span>` : ""}${end}</span>${chevron ? IC.chev : ""}</button></li>`;
+}
+const notice = (tone, icon, html) => `<div class="notice ${tone}">${icon}<div>${html}</div></div>`;
+const fact = (k, v) => `<div class="fact"><span class="k">${k}</span><span class="v">${v}</span></div>`;
+
+/* Payment status chips */
+function pstat(p) {
+  const M = {
+    scheduled: ["info", IC.cal, L(`Programado · ${fmt(p.date)}`, `Scheduled · ${fmt(p.date)}`)],
+    processing: ["info", IC.send, L("Procesando", "Processing")],
+    sent: ["ok", IC.check, L("Enviado", "Sent")],
+    rejected: ["err", IC.alert, L("Rechazado · plata devuelta", "Rejected · refunded")],
+    failed: ["err", IC.alert, L("Falló · sin fondos", "Failed · insufficient funds")],
+    canceled: ["neutral", IC.x, L("Cancelado", "Canceled")],
+    preparing: ["info", IC.doc, L("Preparando cheque", "Preparing check")],
+    mailed: ["info", IC.mail, L("Enviado por correo", "Mailed")],
+    cashed: ["ok", IC.check, L("Cobrado", "Cashed")],
+    returned: ["err", IC.alert, L("Devuelto · plata devuelta", "Returned · refunded")],
+    expired: ["warn", IC.clock, L("Vencido · plata devuelta", "Expired · refunded")],
+    cancelReq: ["warn", IC.clock, L("Cancelación pedida", "Cancellation requested")]
+  };
+  const [tone, icon, txt] = M[p.status];
+  return `<span class="chip ${tone}">${icon}${txt}</span>`;
+}
+
+/* ================= Plan B derived ================= */
+function billState(b) {
+  const live = S.data.payments.find(p => p.bill === b.id && ["scheduled", "processing", "sent", "preparing", "mailed"].includes(p.status));
+  if (live) return { kind: live.status === "scheduled" ? "scheduled" : "paid", p: live };
+  if (b.dismissed) return { kind: "dismissed" };
+  const br = biller(b.biller);
+  const failed = S.data.payments.find(p => p.bill === b.id && p.status === "failed");
+  if (failed) return { kind: "failed", p: failed };
+  if (br.autopay && br.autopay.mode === "full" && !(br.autopay.max && b.amount > br.autopay.max)) {
+    const t = plus(b.due, -(br.autopay.before || 0));
+    return { kind: "autopay", date: t < TODAY ? TODAY : t };
+  }
+  return { kind: "due" };
+}
+const openBills = () => S.data.bills.filter(b => !["paid", "dismissed"].includes(billState(b).kind));
+function dueChip(due) {
+  const n = diffDays(TODAY, due);
+  if (n < 0) return `<span class="chip err">${IC.alert}${L(`Vencida hace ${-n} día${n === -1 ? "" : "s"}`, `Overdue by ${-n} day${n === -1 ? "" : "s"}`)}</span>`;
+  if (n === 0) return `<span class="chip err">${IC.alert}${L("Vence hoy", "Due today")}</span>`;
+  if (n <= 3) return `<span class="chip warn">${IC.clock}${L(`Vence en ${n} días`, `Due in ${n} days`)}</span>`;
+  return `<span>${L(`Vence ${fmt(due)}`, `Due ${fmt(due)}`)}</span>`;
+}
+function billChip(b) {
+  const st = billState(b);
+  if (st.kind === "failed") return `<span class="chip err">${IC.alert}${L("El pago falló", "Payment failed")}</span>`;
+  if (st.kind === "scheduled") return `<span class="chip info">${IC.cal}${L(`Programada ${fmt(st.p.date)}`, `Scheduled ${fmt(st.p.date)}`)}</span>`;
+  if (st.kind === "autopay") return `<span class="badge-ap">AUTOPAY</span><span>${fmt(st.date)}</span>`;
+  if (st.kind === "paid") return `<span class="chip ok">${IC.check}${L("Pagada", "Paid")}</span>`;
+  return dueChip(b.due);
+}
+const rank = b => { const k = billState(b).kind; const n = diffDays(TODAY, b.due); return k === "failed" ? 0 : n <= 0 ? 1 : 2; };
+
+/* ================= Screens ================= */
+const R = {};
+
+R.start = () => ({
+  title: "Bill Pay", noBack: true, hideTitle: true,
+  body: `<div class="start-intro"><h2>${L("Bill Pay · dos planes", "Bill Pay · two plans")}</h2>
+    <p>${L("Elegí con qué supuesto recorrer el prototipo. Las etiquetas punteadas explican por qué algo es así, qué falta verificar y qué hay que acordar.", "Pick the assumption to walk through. Dashed tags explain why something works this way, what's left to verify and what needs agreement.")}</p></div>
+  <button type="button" class="plan" data-act="plan" data-id="A">
+    <span class="p-top"><span class="p-letter">A</span><span class="chip ok">${IC.check}${L("Lo que hay hoy · MVP probable", "Available today · likely MVP")}</span></span>
+    <h3>${L("Sin eBills · solo SoFi/Galileo", "No eBills · SoFi/Galileo only")}</h3>
+    <ul><li>${L("El usuario escribe el monto", "The user types the amount")}</li><li>${L("Pagos programados y autopay de monto fijo", "Scheduled payments and fixed-amount autopay")}</li><li>${L("Recordatorios que carga el usuario (oportunidad)", "User-set reminders (opportunity)")}</li><li>${L("Cheque en papel como plan B, con Sardine", "Paper check as plan B, with Sardine")}</li></ul>
+    <span class="go">${L("Ver el flujo →", "See the flow →")}</span></button>
+  <button type="button" class="plan b" data-act="plan" data-id="B">
+    <span class="p-top"><span class="p-letter">B</span><span class="chip err">${IC.lock}${L("Falta proveedor · post-MVP probable", "No provider · likely post-MVP")}</span></span>
+    <h3>${L("Con eBills · proveedor externo", "With eBills · external provider")}</h3>
+    <ul><li>${L("Monto y vencimiento de cada factura", "Amount and due date for each bill")}</li><li>${L("Pagar el total, pagar varias, “Ya la pagué”", "Pay in full, pay several, “I already paid it”")}</li><li>${L("Autopay “lo que diga la factura”", "Autopay “whatever the bill says”")}</li><li>${L("Cobertura parcial: conviven facturas y billers sin factura", "Partial coverage: bills and billers without bills side by side")}</li></ul>
+    <span class="go">${L("Ver el flujo →", "See the flow →")}</span></button>
+  ${pins("planA", "effort", "ebProvider")}`
+});
+
+/* ---------- Plan A home ---------- */
+function nextReminder(day) {
+  const t = D(TODAY); let x = new Date(t.getFullYear(), t.getMonth(), day);
+  if (ISO(x) <= TODAY) x = new Date(t.getFullYear(), t.getMonth() + 1, day);
+  return ISO(x);
+}
+R.homeA = () => {
+  const B = S.data.billers;
+  const up = [];
+  S.data.payments.filter(p => p.status === "scheduled" && biller(p.biller)).forEach(p => up.push({ t: "sched", date: p.date, p }));
+  B.filter(b => b.autopay).forEach(b => up.push({ t: "ap", date: b.autopay.next, b }));
+  B.filter(b => b.reminder).forEach(b => up.push({ t: "rem", date: nextReminder(b.reminder.day), b }));
+  up.sort((a, b) => a.date.localeCompare(b.date));
+  const in30 = up.filter(u => diffDays(TODAY, u.date) <= 30 && u.t !== "rem");
+  const total = round2(in30.reduce((s, u) => s + (u.t === "sched" ? u.p.amount : u.b.autopay.amount), 0));
+  const flight = S.data.payments.filter(p => biller(p.biller) && ["processing", "preparing", "mailed", "cancelReq"].includes(p.status)).sort((a, b) => b.date.localeCompare(a.date));
+  const upRows = up.map((u, i) => {
+    if (u.t === "sched") { const b = biller(u.p.biller); return row({ act: "payment", id: u.p.id, lead: logo(b), name: esc(b.name), sub: `<span class="chip info">${IC.cal}${L("Programado", "Scheduled")}</span><span>${fmtDay(u.date)}</span>`, amt: money(u.p.amount) }); }
+    if (u.t === "ap") return row({ act: "biller", id: u.b.id, lead: logo(u.b), name: esc(u.b.name), sub: `<span class="badge-ap">AUTOPAY</span><span>${fmtDay(u.date)} · ${L("mensual", "monthly")}</span>`, amt: money(u.b.autopay.amount) });
+    return row({ act: "biller", id: u.b.id, lead: logo(u.b), name: esc(u.b.name), sub: `<span class="chip neutral">${IC.bell}${L("Recordatorio", "Reminder")}</span><span>${L(`vence el ${u.b.reminder.day}`, `due on the ${u.b.reminder.day}${["th","st","nd","rd"][(u.b.reminder.day % 10 < 4 && Math.floor(u.b.reminder.day / 10) !== 1) ? u.b.reminder.day % 10 : 0]}`)}</span>`, amt: L("Sin monto", "No amount"), amtMuted: true });
+  }).join("");
+  const flRows = flight.map(p => { const b = biller(p.biller); return row({ act: "payment", id: p.id, lead: logo(b), name: esc(b.name), sub: pstat(p), amt: money(p.amount) }); }).join("");
+  const bRows = B.map(b => {
+    const last = paysOf(b.id).find(p => ["sent", "cashed"].includes(p.status));
+    const sub = `${methodTag(b)}<span class="sep">·</span><span>${last ? L(`último ${money(last.amount)} · ${fmt(last.date)}`, `last ${money(last.amount)} · ${fmt(last.date)}`) : L("sin pagos todavía", "no payments yet")}</span>`;
+    return row({ act: "biller", id: b.id, lead: logo(b), name: esc(b.name), sub });
+  }).join("");
+  return {
+    title: L("Pagar cuentas", "Pay bills"), large: true,
+    body: `
+    <div class="summary"><span class="lbl">${L("Programado en los próximos 30 días", "Scheduled in the next 30 days")}</span>
+      <span class="total num">${money(total)}</span>
+      <span class="ctx">${L("Lo que vos programaste. No vemos cuánto debés ni cuándo vence.", "What you scheduled. We can't see what you owe or when it's due.")}</span>
+      ${pins("noEbillHome", "schedSource")}
+      <div class="acts"><button type="button" class="btn primary sm" data-act="pickPay">${IC.send}${L("Hacer un pago", "Make a payment")}</button><button type="button" class="btn secondary sm" data-act="add">${IC.plus}${L("Agregar", "Add")}</button></div></div>
+    <section class="sec"><div class="sec-head"><h2>${L("Próximos", "Upcoming")}</h2>${pins("reminders")}</div>
+      ${up.length ? `<ul class="list">${upRows}</ul>` : notice("info", IC.info, L("No tenés nada programado. Programá un pago o activá un recordatorio desde cada biller.", "Nothing scheduled. Schedule a payment or set a reminder from any biller."))}</section>
+    ${flight.length ? `<section class="sec"><div class="sec-head"><h2>${L("En curso", "In flight")}</h2>${pins("inflight", "checkNoTrack")}</div><ul class="list">${flRows}</ul></section>` : ""}
+    <section class="sec"><div class="sec-head"><h2>${L("Tus billers", "Your billers")}</h2>${pins("logos", "categories", "activityInBiller")}</div>
+      <ul class="list">${bRows}<li><button type="button" class="add-row" data-act="add"><span class="ic">${IC.plus}</span>${L("Agregar un biller", "Add a biller")}</button></li></ul></section>
+    ${!biller("duke") ? "" : notice("info", IC.star, `<b>${L("¿Pagaste a Duke 3 meses seguidos cerca del 10?", "Paid Duke 3 months in a row around the 10th?")}</b><br>${L("Podemos recordártelo cada mes.", "We can remind you every month.")} <button type="button" class="btn link" data-act="reminder" data-id="duke">${L("Configurar", "Set up")}</button>${pins("pattern")}`)}`
+  };
+};
+
+/* ---------- Plan B intro + home ---------- */
+R.introB = () => ({
+  title: L("Con eBills", "With eBills"),
+  body: `<div class="start-intro"><h2>${L("Antes de empezar", "Before you start")}</h2><p>${L("Este flujo depende de cosas que hoy no existen. Lo mostramos para decidir, no para comprometerlo.", "This flow depends on things that don't exist today. We show it to decide, not to commit to it.")}</p></div>
+  ${notice("block", IC.lock, `<b>${L("Falta el proveedor de eBills", "No eBill provider yet")}</b><br>${L("SoFi/Galileo no trae facturas. Hay que elegir proveedor, firmar contrato y conocer plazos.", "SoFi/Galileo has no bills. A provider must be chosen, contracted and scheduled.")}${pins("ebProvider", "ebCost")}`)}
+  ${notice("block", IC.cal, `<b>${L("Plazos", "Timeline")}</b><br>${L("MVP en noviembre. Sin proveedor, este plan probablemente no entra.", "MVP in November. Without a provider, this plan most likely doesn't make it.")}${pins("ebMvp", "effort")}`)}
+  ${notice("warn", IC.alert, `<b>${L("Cobertura, datos y emparejamiento", "Coverage, data and matching")}</b><br>${L("No todas las empresas tienen eBill, conectar cuentas requiere consentimiento y guardar datos, y hay que emparejar dos directorios.", "Not every biller has eBills, connecting accounts needs consent and stored data, and two directories have to be matched.")}${pins("ebCoverage", "ebConsent", "ebMatch")}`)}`,
+  foot: `<button type="button" class="btn primary block" data-act="go" data-id="homeB">${L("Ver el flujo igual", "See the flow anyway")}</button>`
+});
+
+R.homeB = () => {
+  const open = openBills().sort((a, b) => rank(a) - rank(b) || a.due.localeCompare(b.due));
+  const total = round2(open.reduce((s, b) => s + b.amount, 0));
+  const overdue = open.filter(b => diffDays(TODAY, b.due) < 0).length;
+  const failed = open.filter(b => billState(b).kind === "failed").length;
+  const picking = Array.isArray(S.pick);
+  const rows = open.map((b, i) => {
+    const br = biller(b.biller); const on = picking && S.pick.includes(b.id);
+    const lead = picking ? `<span class="cb${on ? " on" : ""}">${IC.check}</span>${logo(br)}` : logo(br);
+    return row({ act: picking ? "togglePick" : "bill", id: b.id, lead, name: esc(br.name), sub: billChip(b) + (i === 0 ? pin("ebStale") : ""), amt: money(b.amount), extraCls: picking ? "picking" : "", chevron: !picking });
+  }).join("");
+  const noEb = S.data.billers.filter(b => !b.eb);
+  const bRows = S.data.billers.map(b => row({ act: "biller", id: b.id, lead: logo(b), name: esc(b.name), sub: `${methodTag(b)}<span class="sep">·</span><span>${b.eb ? L("Facturas conectadas", "Bills connected") : L("Sin eBill · monto libre", "No eBill · free amount")}</span>` })).join("");
+  const pickSum = picking ? round2(S.pick.reduce((s, id) => s + billById(id).amount, 0)) : 0;
+  return {
+    title: L("Pagar cuentas", "Pay bills"), large: true,
+    body: `
+    <div class="summary"><span class="lbl">${L("Pendiente (este mes + vencidas)", "Pending (this month + overdue)")}</span>
+      <span class="total num">${money(total)}</span>
+      ${failed ? `<span class="ctx err">${L(`${failed} pago falló`, `${failed} payment failed`)}${overdue ? L(` · ${overdue} vencida`, ` · ${overdue} overdue`) : ""}</span>` : overdue ? `<span class="ctx err">${L(`${overdue} vencida`, `${overdue} overdue`)}</span>` : ""}
+      ${pins("ebOrder", "ebMvp")}
+      <div class="acts">${open.length ? `<button type="button" class="btn ${picking ? "secondary" : "primary"} sm" data-act="pickMode">${picking ? L("Cancelar selección", "Cancel selection") : L("Pagar varias", "Pay several")}</button>` : ""}<button type="button" class="btn secondary sm" data-act="add">${IC.plus}${L("Agregar", "Add")}</button></div></div>
+    <section class="sec"><div class="sec-head"><h2>${L("Facturas", "Bills")}</h2>${pins("ebCoverage")}</div>
+      ${open.length ? `<ul class="list">${rows}</ul>` : `<div class="notice ok">${IC.check}<div><b>${L("Estás al día", "You're all caught up")}</b><br>${L("con las empresas que mandan factura electrónica.", "with billers that send eBills.")}</div></div>`}
+      ${noEb.length ? notice("info", IC.info, L(`${noEb.length} billers no mandan factura electrónica (${noEb.map(b => esc(b.name)).join(", ")}). Para ellos escribís el monto.`, `${noEb.length} billers don't send eBills (${noEb.map(b => esc(b.name)).join(", ")}). For those you type the amount.`)) : ""}</section>
+    <section class="sec"><div class="sec-head"><h2>${L("Tus billers", "Your billers")}</h2>${pins("logos", "activityInBiller")}</div>
+      <ul class="list">${bRows}<li><button type="button" class="add-row" data-act="add"><span class="ic">${IC.plus}</span>${L("Agregar un biller", "Add a biller")}</button></li></ul></section>`,
+    overlayFoot: picking && S.pick.length ? `<div class="pickbar"><div><b>${L(`${S.pick.length} factura${S.pick.length > 1 ? "s" : ""}`, `${S.pick.length} bill${S.pick.length > 1 ? "s" : ""}`)} · ${money(pickSum)}</b><span>${L("Se paga el total de cada una", "Each is paid in full")}</span></div><button type="button" class="btn primary sm" data-act="reviewPick">${L("Revisar", "Review")}</button></div>` : ""
+  };
+};
+
+/* ---------- Bill detail (Plan B) ---------- */
+R.bill = ({ id }) => {
+  const b = billById(id), br = biller(b.biller), st = billState(b);
+  if (!S.draft.billAmt || S.draft.billAmt.id !== id) S.draft.billAmt = { id, v: b.amount };
+  const amt = S.draft.billAmt.v;
+  const canSchedule = diffDays(TODAY, b.due) > 0;
+  const failedP = st.kind === "failed" ? st.p : null;
+  return {
+    title: esc(br.name),
+    body: `<div class="hero">${logo(br, "lg")}<p>${esc(br.name)} · ••${esc(br.acct)}</p><span class="big num">${money(b.amount)}</span><div>${billChip(b)}</div></div>
+    ${notice("info", IC.doc, `${L(`Monto de tu factura electrónica · actualizado hoy ${b.upd}`, `Amount from your eBill · updated today ${b.upd}`)}${pins("ebStale", "ebMatch")}`)}
+    ${failedP ? notice("err", IC.alert, `<b>${L(`El pago del ${fmt(failedP.date)} falló`, `The ${fmt(failedP.date)} payment failed`)}</b><br>${L("No había saldo suficiente. No se reintenta solo.", "There wasn't enough balance. It doesn't retry on its own.")}${pins("insufficient")}`) : ""}
+    ${b.min ? `<section class="sec"><div class="sec-head"><h2>${L("¿Cuánto pagás?", "How much?")}</h2>${pins("ebFull")}</div><div class="choices">
+      <button type="button" class="choice${amt === b.amount ? " on" : ""}" data-act="billAmt" data-id="${b.amount}" style="grid-template-columns:minmax(0,1fr) auto auto"><span><span class="c-name">${L("Saldo total", "Statement balance")}</span><br><span class="c-sub">${L("Evitás intereses", "Avoid interest")}</span></span><span class="r-amt num">${money(b.amount)}</span><span class="tick"></span></button>
+      <button type="button" class="choice${amt === b.min ? " on" : ""}" data-act="billAmt" data-id="${b.min}" style="grid-template-columns:minmax(0,1fr) auto auto"><span><span class="c-name">${L("Pago mínimo", "Minimum due")}</span><br><span class="c-sub">${L("El resto genera intereses", "The rest accrues interest")}</span></span><span class="r-amt num">${money(b.min)}</span><span class="tick"></span></button></div></section>` : pins("ebFull")}
+    <div class="actions" style="display:grid;gap:10px">
+      <button type="button" class="btn primary block" data-act="payBill" data-id="${b.id}">${failedP ? L(`Reintentar ${money(amt)}`, `Retry ${money(amt)}`) : L(`Pagar ${money(amt)}`, `Pay ${money(amt)}`)}</button>
+      ${canSchedule ? `<button type="button" class="btn secondary block" data-act="scheduleBill" data-id="${b.id}">${L(`Programar para el ${fmt(b.due)}`, `Schedule for ${fmt(b.due)}`)}</button>${pins("ebSchedule")}` : ""}
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap"><button type="button" class="btn link" data-act="dismiss" data-id="${b.id}">${L("Ya la pagué", "I already paid it")}</button><button type="button" class="btn link" data-act="biller" data-id="${br.id}">${L(`Ver ${br.name}`, `See ${br.name}`)}</button></div>
+      ${pins("ebDismiss")}
+    </div>`
+  };
+};
+
+/* ---------- Biller detail (both plans) ---------- */
+R.biller = ({ id }) => {
+  const b = biller(id); if (!b) return R[home()]();
+  const hist = paysOf(id).filter(p => p.status !== "scheduled");
+  const sched = paysOf(id).filter(p => p.status === "scheduled");
+  const bills = S.plan === "B" ? S.data.bills.filter(x => x.biller === id && !["paid", "dismissed"].includes(billState(x).kind)) : [];
+  const ap = b.autopay;
+  const apText = !ap ? "" : ap.mode === "full"
+    ? L(`Paga el total de cada factura, ${ap.before} días antes`, `Pays each bill in full, ${ap.before} days before`)
+    : L(`${money(ap.amount)} · ${freqLabel(ap.freq)} · próximo ${fmt(ap.next)}`, `${money(ap.amount)} · ${freqLabel(ap.freq)} · next ${fmt(ap.next)}`);
+  const ebLine = S.plan === "B" && b.kind === "rpps"
+    ? (b.eb ? notice("ok", IC.link, `${L("Facturas electrónicas conectadas.", "eBills connected.")}${pins("ebConsent")}`) : notice("info", IC.info, `${L("Esta empresa no manda factura electrónica. Pagá con el monto que corresponda.", "This biller doesn't send eBills. Pay the amount you owe.")}${pins("ebCoverage")}`))
+    : notice("info", IC.info, `${b.kind === "check" ? L("Los pagos salen como cheque en papel por correo.", "Payments go out as a paper check by mail.") : L("No recibimos facturas de esta empresa. Pagá cuando quieras, con el monto que corresponda.", "We don't receive bills from this biller. Pay whenever you want, the amount you owe.")}${pins(b.kind === "check" ? "checkTiming" : "noEbillHome")}`);
+  return {
+    title: esc(b.name),
+    body: `<div class="hero">${logo(b, "lg")}<h2>${esc(b.name)}</h2><p>${b.kind === "check" ? esc(b.addr) : `${L("Cuenta", "Account")} ••${esc(b.acct)}`}</p><div>${methodTag(b)}</div>
+      ${b.kind === "check" ? pins("checkPerson") : pins("acctNoEdit")}</div>
+    ${ebLine}
+    ${bills.length ? `<section class="sec"><div class="sec-head"><h2>${L("Facturas", "Bills")}</h2></div><ul class="list">${bills.map(x => row({ act: "bill", id: x.id, lead: `<span class="logo round" style="background:var(--sky);color:var(--royal)">${IC.doc}</span>`, name: L(`Factura ${fmt(x.due)}`, `Bill ${fmt(x.due)}`), sub: billChip(x), amt: money(x.amount) })).join("")}</ul></section>` : ""}
+    <div class="btn-row">
+      <button type="button" class="qa primary" data-act="pay" data-id="${b.id}"><span class="ic">${IC.send}</span>${L("Pagar", "Pay")}</button>
+      <button type="button" class="qa" data-act="${S.plan === "B" && b.eb ? "autopayB" : "autopay"}" data-id="${b.id}"><span class="ic">${IC.repeat}</span>Autopay</button>
+      ${S.plan === "A" ? `<button type="button" class="qa" data-act="reminder" data-id="${b.id}"><span class="ic">${IC.bell}</span>${L("Recordatorio", "Reminder")}</button>` : `<button type="button" class="qa" data-act="toast" data-id="${L("Notificaciones: PRD aparte", "Notifications: separate PRD")}"><span class="ic">${IC.bell}</span>${L("Avisos", "Alerts")}</button>`}
+    </div>
+    ${ap ? `<button type="button" class="apcard" data-act="${ap.mode ? "autopayB" : "autopay"}" data-id="${b.id}"><span class="ic">${IC.repeat}</span><span><b>${L("Autopay activo", "Autopay on")}</b><span>${apText}</span></span>${IC.chev}</button>` : ""}
+    ${b.reminder ? `<button type="button" class="apcard" data-act="reminder" data-id="${b.id}"><span class="ic">${IC.bell}</span><span><b>${L(`Recordatorio el día ${b.reminder.day}`, `Reminder on day ${b.reminder.day}`)}</b><span>${L(`Te avisamos ${b.reminder.before} días antes`, `We notify you ${b.reminder.before} days before`)}</span></span>${IC.chev}</button>` : ""}
+    ${sched.length ? `<section class="sec"><div class="sec-head"><h2>${L("Programados", "Scheduled")}</h2>${pins("noUndo")}</div><ul class="list">${sched.map(p => row({ act: "payment", id: p.id, lead: `<span class="logo round" style="background:var(--sky);color:var(--royal)">${IC.cal}</span>`, name: money(p.amount), sub: pstat(p) })).join("")}</ul></section>` : ""}
+    <section class="sec"><div class="sec-head"><h2>${L("Historial", "History")}</h2>${pins("activityInBiller", "webhooks")}</div>
+      ${hist.length ? `<ul class="list">${hist.map(p => row({ act: "payment", id: p.id, lead: `<span class="logo round" style="background:var(--g100);color:var(--g600)">${p.auto ? IC.repeat : IC.send}</span>`, name: `${money(p.amount)}${p.auto ? ` <span class="badge-ap">AUTOPAY</span>` : ""}`, sub: `${pstat(p)}<span>${fmt(p.date)}</span>` })).join("")}</ul>` : `<p class="hint">${L("Todavía no hay pagos.", "No payments yet.")}</p>`}</section>
+    <div style="display:grid;justify-items:center"><button type="button" class="btn ghost-danger" data-act="remove" data-id="${b.id}">${IC.trash}${L("Eliminar biller", "Remove biller")}</button>${pins("removeBiller")}</div>`
+  };
+};
+const freqLabel = f => ({ W: L("semanal", "weekly"), M: L("mensual", "monthly"), Q: L("trimestral", "quarterly"), Y: L("anual", "yearly") }[f]);
+
+/* ---------- Pay (free amount) ---------- */
+R.pay = ({ id }) => {
+  const b = biller(id);
+  const dr = S.draft.pay && S.draft.pay.id === id ? S.draft.pay : (S.draft.pay = { id, amount: "", when: "today", date: d(7) });
+  const last = paysOf(id).find(p => ["sent", "cashed"].includes(p.status));
+  return {
+    title: L(`Pagar a ${b.name}`, `Pay ${b.name}`),
+    body: `<div class="hero">${logo(b, "lg")}<p>${esc(b.name)} · ${b.kind === "check" ? L("cheque", "check") : `••${esc(b.acct)}`}</p></div>
+    <div class="amount-entry"><input type="text" inputmode="decimal" id="amt" placeholder="$0.00" value="${esc(dr.amount)}" aria-label="${L("Monto", "Amount")}">
+      ${last ? `<div class="sugg"><button type="button" data-act="sugg" data-id="${last.amount}">${L("Último", "Last")}: ${money(last.amount)}</button></div>` : ""}
+      ${pins("freeAmount")}</div>
+    <div class="facts">
+      ${fact(L("Desde", "From"), `Deposit ••4821<small>${L("Disponible", "Available")} ${money(S.data.balance)}</small>${pins("depositOnly")}`)}
+      ${fact(L("Cuándo", "When"), `<div class="pillset"><button type="button" class="${dr.when === "today" ? "on" : ""}" data-act="when" data-id="today">${L("Hoy", "Today")}</button><button type="button" class="${dr.when === "later" ? "on" : ""}" data-act="when" data-id="later">${L("Otra fecha", "Later")}</button></div>${dr.when === "later" ? `<input type="date" id="pdate" min="${d(1)}" value="${dr.date}" style="margin-top:8px">` : ""}${pins("schedWeekend")}`)}
+      ${fact(L("Llega", "Arrives"), b.kind === "check" ? `${L(`Se imprime el ${fmtDay(nextBizDay(dr.when === "today" ? TODAY : dr.date))} a las 6:00`, `Printed ${fmtDay(nextBizDay(dr.when === "today" ? TODAY : dr.date))} at 6:00`)}<small>${L("Sale por correo en 2–3 días hábiles · llega en 1–10 días", "Mailed in 2–3 business days · arrives in 1–10 days")}</small>${pins("checkTiming")}` : `${L("Suele llegar en 1 a 10 días", "Usually arrives in 1–10 days")}<small>${L("según la empresa", "depending on the biller")}</small>${pins("arrival")}`)}
+      ${fact(L("Comisión", "Fee"), `<span style="color:var(--warn)">${L("A definir", "To be defined")}</span>${pins(b.kind === "check" ? "checkFee" : "fees")}`)}
+      ${fact(L("Límite", "Limit"), `${L(`Te quedan ${money(limitLeft())} hoy`, `${money(limitLeft())} left today`)}<small>${L("de $10.000 por día, cheques incluidos", "of $10,000 per day, checks included")}</small>${pins("dailyLimit")}`)}
+    </div>
+    <div id="pay-dyn"></div>`,
+    foot: `<button type="button" class="btn primary block" data-act="reviewPay" data-id="${id}">${L("Revisar", "Review")}</button>`,
+    after: () => updatePay()
+  };
+};
+function payProblem() {
+  const dr = S.draft.pay; const a = parseAmt(dr.amount);
+  if (dr.amount === "") return { soft: true };
+  if (!(a > 0)) return { msg: L("Escribí un monto válido.", "Enter a valid amount.") };
+  if (a > 25000) return { msg: L("El máximo por pago es $25.000.", "The maximum per payment is $25,000."), note: "freeAmount" };
+  if (dr.when === "today" && a > limitLeft()) return { msg: L(`Supera tu límite de hoy. Te quedan ${money(limitLeft())}.`, `Over today's limit. ${money(limitLeft())} left.`), note: "dailyLimit" };
+  if (dr.when === "today" && a > S.data.balance) return { short: round2(a - S.data.balance) };
+  return null;
+}
+function updatePay() {
+  const el = $("#pay-dyn"); if (!el) return;
+  const pr = payProblem(); S.cur = S.cur.filter(x => !["insufficient", "autopayFunds"].includes(x));
+  if (pr && pr.short) el.innerHTML = notice("err", IC.alert, `<b>${L(`Te faltan ${money(pr.short)}`, `You're ${money(pr.short)} short`)}</b><br>${L("Ingresá plata a tu cuenta Deposit o pagá un monto menor.", "Add money to your Deposit account or pay less.")}${pins("insufficient", "depositOnly")}`);
+  else if (pr && pr.msg) el.innerHTML = notice("err", IC.alert, `${pr.msg}${pr.note ? pins(pr.note) : ""}`);
+  else if (S.draft.pay.when === "later") el.innerHTML = notice("info", IC.info, `${L("Revisamos tu saldo el día del pago. Si no alcanza, el pago falla y te avisamos.", "We check your balance on the payment day. If it's short, it fails and we let you know.")}${pins("autopayFunds")}`);
+  else el.innerHTML = "";
+  renderPanel();
+}
+
+/* ---------- Review (single or several) ---------- */
+R.review = () => {
+  const rv = S.draft.review; const items = rv.items;
+  const total = round2(items.reduce((s, x) => s + x.amount, 0));
+  const anyCheck = items.some(x => biller(x.biller).kind === "check");
+  const left = round2(S.data.balance - total);
+  const short = !rv.schedule && left < 0;
+  const list = items.map(x => { const b = biller(x.biller); return row({ act: "noop", id: "", lead: logo(b), name: esc(b.name), sub: `${methodTag(b)}${x.bill ? `<span class="sep">·</span><span>${L("factura", "bill")} ${fmt(billById(x.bill).due)}</span>` : ""}`, amt: money(x.amount), chevron: false }); }).join("");
+  const checkB = anyCheck ? biller(items.find(x => biller(x.biller).kind === "check").biller) : null;
+  return {
+    title: L("Revisá el pago", "Review payment"),
+    body: `<div class="hero"><p>${rv.schedule ? L("Vas a programar", "You're scheduling") : L("Vas a pagar", "You're paying")}</p><span class="big num">${money(total)}</span></div>
+    <ul class="list">${list}</ul>
+    ${items.length > 1 ? pins("ebSeveral") : ""}
+    <div class="facts">
+      ${fact(L("Desde", "From"), `Deposit ••4821<small>${L("Disponible", "Available")} ${money(S.data.balance)}</small>`)}
+      ${fact(L("Fecha", "Date"), rv.schedule ? `${fmtDay(rv.date)}<small>${L(`Podés cancelarlo hasta el ${fmt(plus(rv.date, -1))}`, `You can cancel until ${fmt(plus(rv.date, -1))}`)}</small>${pins("noUndo")}` : `${L("Hoy", "Today")}<small>${L("Empieza a procesarse en minutos", "Starts processing within minutes")}</small>`)}
+      ${fact(L("Llega", "Arrives"), anyCheck ? `${L("Cheque: se imprime el próximo día hábil, llega en 1–10 días", "Check: printed next business day, arrives in 1–10 days")}${pins("checkTiming")}` : `${L("Suele llegar en 1 a 10 días", "Usually arrives in 1–10 days")}${pins("arrival")}`)}
+      ${fact(L("Comisión", "Fee"), `<span style="color:var(--warn)">${L("A definir", "To be defined")}</span>${pins(anyCheck ? "checkFee" : "fees")}`)}
+      ${!rv.schedule ? fact(L("Te quedan", "Left after"), `<span style="color:${short ? "var(--err)" : "inherit"}">${money(left)}</span><small>${L("+ comisión, si hay", "+ fee, if any")}</small>${pins("leftAfter")}`) : ""}
+      ${checkB ? fact("Sardine", `<span class="chip ok">${IC.shield}${L(`Destinatario aprobado ${fmt(checkB.sardineAt || TODAY)}`, `Payee approved ${fmt(checkB.sardineAt || TODAY)}`)}</span><small>${L("¿Se vuelve a controlar en cada cheque?", "Re-checked on every check?")}</small>${pins("sardine")}`) : ""}
+    </div>
+    ${short ? notice("err", IC.alert, `<b>${L(`Te faltan ${money(-left)}`, `You're ${money(-left)} short`)}</b><br>${L("Sacá alguna factura o ingresá plata a tu cuenta.", "Remove a bill or add money to your account.")}${pins("insufficient", "ebSeveral")}`) : ""}
+    <p class="disclosure">${rv.schedule ? L("Revisamos tu saldo el día del pago. Si no alcanza, el pago falla y te avisamos.", "We check your balance on the payment day. If it's short, it fails and we let you know.") : L("Los pagos de hoy empiezan a procesarse en minutos y no se pueden cancelar después.", "Today's payments start processing within minutes and can't be canceled afterwards.")} ${pins(rv.schedule ? "autopayFunds" : "noUndo", "idempotency")}</p>`,
+    foot: `<button type="button" class="btn primary block" data-act="confirm" ${short ? "disabled" : ""}>${rv.schedule ? L(`Programar ${money(total)}`, `Schedule ${money(total)}`) : L(`Pagar ${money(total)}`, `Pay ${money(total)}`)}</button>`
+  };
+};
+
+R.done = () => {
+  const ps = S.draft.done.map(id => S.data.payments.find(p => p.id === id));
+  const total = round2(ps.reduce((s, p) => s + p.amount, 0));
+  const p = ps[0]; const isCheck = biller(p.biller).kind === "check"; const sched = p.status === "scheduled";
+  const msg = sched ? L(`Programado para el ${fmtDay(p.date)}. Podés cancelarlo hasta el día anterior.`, `Scheduled for ${fmtDay(p.date)}. You can cancel until the day before.`)
+    : isCheck ? L(`Cheque en preparación. Se imprime el ${fmtDay(nextBizDay(TODAY))} a las 6:00 y sale por correo en 2–3 días hábiles.`, `Check in preparation. Printed ${fmtDay(nextBizDay(TODAY))} at 6:00 and mailed in 2–3 business days.`)
+    : L("Suele llegar en 1 a 10 días. Te avisamos si hay un problema.", "Usually arrives in 1–10 days. We'll let you know if there's a problem.");
+  return {
+    title: "", noBack: true,
+    body: `<div class="success"><span class="mark">${sched ? IC.cal : IC.check}</span><h2>${sched ? L("Pago programado", "Payment scheduled") : isCheck ? L("Cheque pedido", "Check requested") : L(ps.length > 1 ? "Pagos enviados" : "Pago enviado", ps.length > 1 ? "Payments sent" : "Payment sent")}</h2>
+      <span class="big num">${money(total)}</span><p>${msg}</p>${pins(isCheck ? "checkTiming" : "neverDelivered", "webhooks")}</div>`,
+    foot: `<button type="button" class="btn primary block" data-act="payment" data-id="${p.id}">${L("Ver estado", "See status")}</button><button type="button" class="btn secondary block" data-act="home">${L("Volver a Pagar cuentas", "Back to Pay bills")}</button>`
+  };
+};
+
+/* ---------- Payment status ---------- */
+R.payment = ({ id }) => {
+  const p = S.data.payments.find(x => x.id === id); const b = biller(p.biller); const isCheck = b.kind === "check";
+  const stepsE = [
+    ["created", L("Pago creado", "Payment created"), "BPCQ · N"],
+    ["debited", L("Debitado de tu cuenta", "Debited from your account"), "BPAY · O"],
+    ["sent", L("Enviado a la red Mastercard", "Sent to the Mastercard network"), "P"],
+    ["arrive", L("La empresa lo recibe en 1–10 días", "Biller receives it in 1–10 days"), L("sin confirmación", "no confirmation")]
+  ];
+  const stepsC = [
+    ["created", L("Pedido creado", "Request created"), "BPCQ · N"],
+    ["debited", L("Debitado · espera impresión", "Debited · waiting to print"), "BPAY · W"],
+    ["printed", L("Impreso (6:00, día hábil)", "Printed (6:00, business day)"), "Q"],
+    ["mailed", L("Enviado por correo", "Mailed"), "BPCM · P"],
+    ["cashed", L("Cobrado por el destinatario", "Cashed by the payee"), "BPCC · C"]
+  ];
+  const idx = isCheck
+    ? ({ scheduled: -1, preparing: 1, mailed: 3, cashed: 4, cancelReq: 1, returned: 3, expired: 3, canceled: 0 }[p.status])
+    : ({ scheduled: -1, processing: 1, sent: 2, rejected: 2, failed: -1, canceled: -1 }[p.status]);
+  const steps = (isCheck ? stepsC : stepsE).map((s, i) => {
+    const cls = s[0] === "arrive" ? "unknown" : i < idx ? "done" : i === idx ? (["sent", "cashed"].includes(p.status) ? "done" : "now") : "";
+    return `<li class="${cls}"><span class="dot"></span><b>${s[1]}</b><span><code>${s[2]}</code></span></li>`;
+  }).join("");
+  const alts = isCheck
+    ? [[IC.alert, L("Devuelto por el correo", "Returned by mail"), L("La plata vuelve a tu cuenta (BPCR → BADJ).", "Money returns to your account (BPCR → BADJ).")],
+       [IC.clock, L("Nadie lo cobra en 180 días", "Not cashed within 180 days"), L("Vence y la plata vuelve (BPEX → BADJ).", "It expires and money returns (BPEX → BADJ).")],
+       [IC.mail, L("Se perdió", "Lost"), L("Cancelás, la plata vuelve en 1–3 días y lo mandás de nuevo.", "Cancel, money returns in 1–3 days, resend.")]]
+    : [[IC.alert, L("La red lo rechaza", "The network rejects it"), L("Te avisamos y la plata vuelve a tu cuenta (BRRJ → BADJ). Puede llegar horas después de “Enviado”.", "We notify you and money returns (BRRJ → BADJ). Can arrive hours after “Sent”.")]];
+  const canCancelSched = p.status === "scheduled" && diffDays(TODAY, p.date) >= 1;
+  const canCancelCheck = isCheck && ["preparing", "mailed"].includes(p.status);
+  return {
+    title: L("Estado del pago", "Payment status"),
+    body: `<div class="hero">${logo(b, "lg")}<p>${esc(b.name)}</p><span class="big num">${money(p.amount)}</span><div>${pstat(p)}</div></div>
+    ${p.status === "failed" ? notice("err", IC.alert, `<b>${L("No había saldo suficiente el día del pago", "Not enough balance on the payment day")}</b><br>${L("Galileo no reintenta. Podés pagarlo a mano.", "Galileo doesn't retry. You can pay it manually.")}${pins("autopayFunds", "insufficient")}`) : ""}
+    ${p.status === "scheduled" ? notice("info", IC.cal, `${L(`Sale el ${fmtDay(p.date)}. Revisamos tu saldo ese día.`, `Goes out ${fmtDay(p.date)}. We check your balance that day.`)}${pins("noUndo", "schedWeekend")}`) : `<ol class="tl" style="margin:0;padding:14px 16px;list-style:none">${steps}</ol>`}
+    ${p.status === "scheduled" ? "" : pins(isCheck ? "checkNoTrack" : "neverDelivered", "webhooks")}
+    ${p.status === "scheduled" ? "" : `<section class="sec"><div class="sec-head"><h2>${L("Qué más puede pasar", "What else can happen")}</h2>${isCheck ? pins("checkExpire") : ""}</div><ul class="alt">${alts.map(a => `<li>${a[0]}<div><b>${a[1]}</b>${a[2]}</div></li>`).join("")}</ul></section>`}
+    ${canCancelSched ? `<button type="button" class="btn secondary block" data-act="cancelSched" data-id="${p.id}">${L("Cancelar pago programado", "Cancel scheduled payment")}</button>` : ""}
+    ${canCancelCheck ? `<button type="button" class="btn secondary block" data-act="cancelCheck" data-id="${p.id}">${p.status === "mailed" ? L("¿No llegó? Cancelar y reenviar", "Didn't arrive? Cancel and resend") : L("Cancelar cheque", "Cancel check")}</button>${pins("cancelCheck", "checkFee")}` : ""}`
+  };
+};
+
+/* ---------- Autopay A (fixed) ---------- */
+R.autopay = ({ id }) => {
+  const b = biller(id); const cur = b.autopay && !b.autopay.mode ? b.autopay : null;
+  const dr = S.draft.ap && S.draft.ap.id === id ? S.draft.ap : (S.draft.ap = { id, amount: cur ? String(cur.amount) : "", freq: cur ? cur.freq : "M", next: cur ? cur.next : d(11), years: "1", warn: true });
+  return {
+    title: "Autopay",
+    body: `<div class="hero">${logo(b, "lg")}<p>${esc(b.name)}</p></div>
+    ${notice("warn", IC.alert, `<b>${L("Puede quedar fuera del día 1", "May be out of day one")}</b><br>${L("Sin factura, el autopay paga siempre el mismo monto.", "Without a bill, autopay always pays the same amount.")}${pins("autopayScope", "autopayFixed")}`)}
+    <div class="card">
+      <div class="field"><label for="apamt">${L("Monto fijo", "Fixed amount")}</label><input type="text" id="apamt" inputmode="decimal" placeholder="$0.00" value="${esc(dr.amount)}"><span class="hint">${L("Cambiarlo cambia todas las cuotas que siguen.", "Changing it changes all following runs.")}</span></div>
+      <div class="field"><label>${L("Cada cuánto", "How often")}</label><div class="pillset">${["W", "M", "Q", "Y"].map(f => `<button type="button" class="${dr.freq === f ? "on" : ""}" data-act="apFreq" data-id="${f}">${freqLabel(f)}</button>`).join("")}</div></div>
+      <div class="row2"><div class="field"><label for="apnext">${L("Primer pago", "First payment")}</label><input type="date" id="apnext" min="${d(1)}" value="${dr.next}"></div>
+      <div class="field"><label for="apyears">${L("Hasta", "Until")}</label><select class="input" id="apyears">${[1, 2, 3, 5].map(y => `<option value="${y}" ${String(y) === dr.years ? "selected" : ""}>${L(`${y} año${y > 1 ? "s" : ""}`, `${y} year${y > 1 ? "s" : ""}`)}</option>`).join("")}</select><span class="hint">${L("Máximo 5 años", "Up to 5 years")}</span></div></div>
+    </div>
+    <label class="toggle"><span><b>${L("Avisarme 2 días antes", "Notify me 2 days before")}</b><span>${L("Así podés ingresar plata si no alcanza", "So you can add money if it's short")}</span></span><input type="checkbox" id="apwarn" ${dr.warn ? "checked" : ""}><span class="sw"></span></label>
+    ${pins("autopayFunds", "autopaySkip", "schedWeekend")}
+    ${cur ? `<button type="button" class="btn ghost-danger block" data-act="apEnd" data-id="${id}">${L("Terminar autopay", "End autopay")}</button>` : ""}`,
+    foot: `<button type="button" class="btn primary block" data-act="apSave" data-id="${id}">${cur ? L("Guardar cambios", "Save changes") : L("Activar autopay", "Turn on autopay")}</button>`
+  };
+};
+
+/* ---------- Autopay B (bill amount) ---------- */
+R.autopayB = ({ id }) => {
+  const b = biller(id); const cur = b.autopay && b.autopay.mode ? b.autopay : null;
+  const dr = S.draft.apb && S.draft.apb.id === id ? S.draft.apb : (S.draft.apb = { id, mode: "full", before: cur ? cur.before : 2, max: cur && cur.max ? String(cur.max) : "" });
+  return {
+    title: "Autopay",
+    body: `<div class="hero">${logo(b, "lg")}<p>${esc(b.name)}</p></div>
+    <div class="choices">
+      <button type="button" class="choice${dr.mode === "full" ? " on" : ""}" data-act="apbMode" data-id="full" style="grid-template-columns:minmax(0,1fr) auto"><span><span class="c-name">${L("El total de cada factura", "Each bill in full")}</span><br><span class="c-sub">${L("Paga lo que diga la eBill", "Pays whatever the eBill says")}</span></span><span class="tick"></span></button>
+      <button type="button" class="choice${dr.mode === "fixed" ? " on" : ""}" data-act="apbMode" data-id="fixed" style="grid-template-columns:minmax(0,1fr) auto"><span><span class="c-name">${L("Un monto fijo", "A fixed amount")}</span><br><span class="c-sub">${L("Como en el Plan A", "Same as Plan A")}</span></span><span class="tick"></span></button>
+    </div>
+    ${pins("ebAutopay", "ebStale")}
+    <div class="card">
+      <div class="field"><label>${L("Cuándo", "When")}</label><div class="pillset">${[0, 2, 5].map(n => `<button type="button" class="${dr.before === n ? "on" : ""}" data-act="apbBefore" data-id="${n}">${n === 0 ? L("El día que vence", "On the due date") : L(`${n} días antes`, `${n} days before`)}</button>`).join("")}</div>${pins("ebSchedule")}</div>
+      <div class="field"><label for="apbmax">${L("Tope máximo", "Maximum")} <span class="opt">${L("(opcional)", "(optional)")}</span></label><input type="text" id="apbmax" inputmode="decimal" placeholder="$0.00" value="${esc(dr.max)}"><span class="hint">${L("Si la factura es mayor, no se paga sola: te avisamos.", "If the bill is higher, it isn't paid automatically: we notify you.")}</span></div>
+    </div>
+    ${pins("autopayFunds", "autopayScope")}
+    ${cur ? `<button type="button" class="btn ghost-danger block" data-act="apEnd" data-id="${id}">${L("Terminar autopay", "End autopay")}</button>` : ""}`,
+    foot: `<button type="button" class="btn primary block" data-act="apbSave" data-id="${id}">${cur ? L("Guardar cambios", "Save changes") : L("Activar autopay", "Turn on autopay")}</button>`
+  };
+};
+
+/* ---------- Add biller ---------- */
+R.addType = () => ({
+  title: L("Agregar", "Add"),
+  body: `<div class="start-intro"><h2>${L("¿A quién le querés pagar?", "Who do you want to pay?")}</h2></div>
+  <div class="choices">
+    <button type="button" class="choice" data-act="addKind" data-id="rpps"><span class="ic">${IC.bolt}</span><span><span class="c-name">${L("Una empresa de la red", "A company on the network")}</span><br><span class="c-sub">${L("Luz, celular, internet, seguros… ~44.000 empresas. Pago electrónico.", "Electric, phone, internet, insurance… ~44,000 companies. Electronic payment.")}</span></span>${IC.chev}</button>
+    <button type="button" class="choice" data-act="addKind" data-id="company"><span class="ic chk">${IC.mail}</span><span><span class="c-name">${L("Una empresa que no aparece", "A company that isn't listed")}</span><br><span class="c-sub">${L("Le mandamos un cheque en papel por correo.", "We mail them a paper check.")}</span></span>${IC.chev}</button>
+    <button type="button" class="choice" data-act="addKind" data-id="person"><span class="ic chk">${IC.user}</span><span><span class="c-name">${L("Una persona", "A person")}</span><br><span class="c-sub">${L("Alquiler a un particular, un contratista. Cheque en papel.", "Rent to an individual, a contractor. Paper check.")}</span></span>${IC.chev}</button>
+  </div>
+  ${pins("addTypes", "paperForRpps", "checkPerson")}`
+});
+
+R.search = () => {
+  const f = S.draft.search || (S.draft.search = { q: "", st: "" });
+  return {
+    title: L("Buscar empresa", "Find a company"),
+    body: `<div class="card">
+      <div class="field"><label for="sq">${L("Nombre de la empresa", "Company name")}</label><input type="text" id="sq" value="${esc(f.q)}" placeholder="${L("Ej.: Duke Energy", "E.g. Duke Energy")}" autocomplete="off"></div>
+      <div class="row2"><div class="field"><label for="sst">${L("Estado", "State")} <span class="opt">${L("(opcional)", "(optional)")}</span></label><select class="input" id="sst"><option value="">${L("Todos", "All")}</option>${["NC", "FL", "NJ", "WA", "CT", "PA", "OH", "IL", "VA"].map(s => `<option ${f.st === s ? "selected" : ""}>${s}</option>`).join("")}</select></div>
+      <div class="field"><label for="sacct">${L("N.º de cuenta", "Account no.")} <span class="opt">${L("(opc.)", "(opt.)")}</span></label><input type="text" id="sacct" inputmode="numeric"></div></div>
+      ${pins("searchFields")}
+    </div>
+    <div class="sec"><div class="sec-head"><h2 id="res-h">${L("Resultados", "Results")}</h2>${pins("dirSchema", "logos")}</div><div id="results"></div></div>
+    ${notice("warn", IC.mail, `<b>${L("¿No la encontrás?", "Can't find it?")}</b><br>${L("Podemos mandarle un cheque en papel.", "We can mail them a paper check.")} <button type="button" class="btn link" data-act="addKind" data-id="company">${L("Mandar cheque", "Send a check")}</button>${pins("addTypes")}`)}`,
+    after: () => updateResults()
+  };
+};
+function updateResults() {
+  const el = $("#results"); if (!el) return;
+  const f = S.draft.search; const q = f.q.trim().toLowerCase();
+  if (q.length < 2) { el.innerHTML = `<p class="hint">${L("Escribí al menos 2 letras. Probá “duke”, “verizon” o “spectrum”.", "Type at least 2 letters. Try “duke”, “verizon” or “spectrum”.")}</p>`; return; }
+  const hits = DIR.filter(x => x.name.toLowerCase().includes(q) && (!f.st || x.loc.endsWith(f.st)));
+  if (!hits.length) { el.innerHTML = notice("warn", IC.search, `${L("No encontramos esa empresa en la red (error 421-01). Podés mandarle un cheque.", "That company isn't on the network (error 421-01). You can mail a check.")}${pins("addTypes")}`); renderPanel(); return; }
+  el.innerHTML = `<ul class="list">${hits.map(x => {
+    const added = S.data.billers.some(b => b.id === x.id);
+    return row({ act: added ? "biller" : "pickDir", id: x.id, lead: logo(x), name: esc(x.name), sub: `<span>${esc(x.loc)} · ${esc(T(x.cat))}</span>${S.plan === "B" ? (x.eb ? `<span class="chip ok">eBill</span>` : `<span class="chip neutral">${L("sin eBill", "no eBill")}</span>`) : ""}`, end: added ? `<span class="chip neutral">${L("Ya agregada", "Already added")}</span>` : "" });
+  }).join("")}</ul>`;
+}
+
+R.acct = () => {
+  const x = dirById(S.draft.add.dir); const a = S.draft.add;
+  return {
+    title: esc(x.name),
+    body: `<div class="hero">${logo(x, "lg")}<h2>${esc(x.name)}</h2><p>${esc(x.loc)}</p></div>
+    <div class="card">
+      <div class="field"><label for="ac1">${L("Número de cuenta", "Account number")}</label><input type="text" id="ac1" inputmode="numeric" value="${esc(a.acct || "")}" placeholder="${"0".repeat(Number(x.mask))}"><span class="hint">${L(`${x.mask} dígitos, según el formato de esta empresa. Está arriba de tu factura.`, `${x.mask} digits, per this biller's format. It's at the top of your bill.`)}</span></div>
+      <div class="field"><label for="ac2">${L("Repetilo", "Enter it again")}</label><input type="text" id="ac2" inputmode="numeric" value="${esc(a.acct2 || "")}"></div>
+      <span class="err-msg" id="ac-err"></span>
+    </div>
+    ${notice("warn", IC.alert, `${L("<b>No se puede cambiar después.</b> Para corregirlo hay que borrar la empresa y agregarla de nuevo.", "<b>It can't be changed later.</b> To fix it, remove the biller and add it again.")}${pins("acctNoEdit")}`)}`,
+    foot: `<button type="button" class="btn primary block" data-act="acctNext">${L("Continuar", "Continue")}</button>`
+  };
+};
+
+R.verify = () => ({
+  title: L("Verificá que sos vos", "Verify it's you"),
+  body: `<div class="hero"><span class="logo lg" style="background:var(--sky);color:var(--royal)">${IC.shield}</span><h2>${L("Te mandamos un código", "We sent you a code")}</h2><p>${L("Por SMS al ••• 4417", "By SMS to ••• 4417")}</p></div>
+  <div class="card"><div class="field"><label for="code">${L("Código de 6 dígitos", "6-digit code")}</label><input type="tel" id="code" class="code-input" maxlength="6" placeholder="••••••"><span class="hint">${L("En el prototipo, cualquier código de 6 dígitos sirve.", "In the prototype, any 6-digit code works.")}</span></div></div>
+  ${pins("stepUp")}`,
+  foot: `<button type="button" class="btn primary block" data-act="verifyNext">${L("Verificar", "Verify")}</button>`
+});
+
+R.connect = () => {
+  const x = dirById(S.draft.add.dir);
+  return {
+    title: L("Facturas electrónicas", "eBills"),
+    body: `<div class="hero">${logo(x, "lg")}<h2>${esc(x.name)}</h2></div>
+    ${x.eb ? `${notice("ok", IC.doc, `<b>${L("Esta empresa manda factura electrónica", "This biller sends eBills")}</b><br>${L("Si conectás tu cuenta, vas a ver cuánto debés y cuándo vence.", "Connect your account to see what you owe and when it's due.")}${pins("ebMatch")}`)}
+      <div class="card"><p style="font-size:14px;color:var(--g600)">${L(`Te vamos a pedir tu usuario de ${x.name} en una pantalla del proveedor de eBills. DingoBlu guarda la conexión, no tu contraseña.`, `We'll ask for your ${x.name} login on the eBill provider's screen. DingoBlu keeps the connection, not your password.`)}</p>${pins("ebConsent", "ebProvider")}</div>`
+    : `${notice("info", IC.info, `<b>${L("Esta empresa no manda factura electrónica", "This biller doesn't send eBills")}</b><br>${L("Vas a pagar con el monto que vos escribas, como hoy.", "You'll pay the amount you type, same as today.")}${pins("ebCoverage")}`)}`}`,
+    foot: x.eb ? `<button type="button" class="btn primary block" data-act="connectYes">${L("Conectar facturas", "Connect bills")}</button><button type="button" class="btn secondary block" data-act="connectNo">${L("Ahora no", "Not now")}</button>` : `<button type="button" class="btn primary block" data-act="connectNo">${L("Continuar", "Continue")}</button>`
+  };
+};
+
+R.added = ({ id }) => {
+  const b = biller(id);
+  return {
+    title: "", noBack: true,
+    body: `<div class="success"><span class="mark">${IC.check}</span><h2>${L(`${b.name} agregado`, `${b.name} added`)}</h2><p>${b.kind === "check" ? L("Los pagos van a salir como cheque en papel.", "Payments will go out as a paper check.") : S.plan === "B" && b.eb ? L("Cuando llegue la primera factura la vas a ver en Pagar cuentas.", "You'll see the first bill in Pay bills when it arrives.") : L("Ya le podés pagar.", "You can pay them now.")}</p></div>
+    <div class="choices">
+      <button type="button" class="choice" data-act="pay" data-id="${b.id}"><span class="ic">${IC.send}</span><span class="c-name">${L("Hacer un pago", "Make a payment")}</span>${IC.chev}</button>
+      <button type="button" class="choice" data-act="${S.plan === "B" && b.eb ? "autopayB" : "autopay"}" data-id="${b.id}"><span class="ic">${IC.repeat}</span><span class="c-name">${L("Configurar autopay", "Set up autopay")}</span>${IC.chev}</button>
+      ${S.plan === "A" ? `<button type="button" class="choice" data-act="reminder" data-id="${b.id}"><span class="ic">${IC.bell}</span><span><span class="c-name">${L("Recordarme el vencimiento", "Remind me of the due date")}</span><br><span class="c-sub">${L("Elegís el día del mes", "Pick the day of the month")}</span></span>${IC.chev}</button>` : ""}
+    </div>
+    ${S.plan === "A" ? pins("reminders") : ""}`,
+    foot: `<button type="button" class="btn secondary block" data-act="home">${L("Listo", "Done")}</button>`
+  };
+};
+
+/* ---------- Check form + Sardine ---------- */
+R.checkForm = () => {
+  const f = S.draft.check; const person = f.type === "person";
+  const fld = (k, label, opt = false, ph = "") => `<div class="field"><label for="cf-${k}">${label}${opt ? ` <span class="opt">${L("(opcional)", "(optional)")}</span>` : ""}</label><input type="text" id="cf-${k}" data-cf="${k}" value="${esc(f[k] || "")}" placeholder="${ph}"></div>`;
+  return {
+    title: person ? L("Pagarle a una persona", "Pay a person") : L("Mandar un cheque", "Send a check"),
+    body: `${notice("warn", IC.mail, `<b>${L("Esto se paga con cheque en papel", "This is paid by paper check")}</b><br>${L("La plata sale de tu cuenta antes de imprimirlo. Llega en 1 a 10 días.", "Money leaves your account before it's printed. Arrives in 1–10 days.")}${pins("checkTiming", "checkFee")}`)}
+    <div class="card">
+      ${fld("name", person ? L("Nombre completo", "Full name") : L("Nombre de la empresa", "Company name"), false, person ? "Carlos Méndez" : "")}
+      ${fld("street", L("Calle y número", "Street address"), false, "1420 SW 8th St")}
+      ${fld("apt", L("Depto., unidad", "Apt, unit"), true)}
+      <div class="row2">${fld("city", L("Ciudad", "City"), false, "Miami")}<div class="field"><label for="cf-state">${L("Estado", "State")}</label><select class="input" id="cf-state" data-cf="state"><option value="">—</option>${["FL", "NC", "TX", "CA", "NY", "AZ", "GA", "IL"].map(s => `<option ${f.state === s ? "selected" : ""}>${s}</option>`).join("")}</select></div></div>
+      ${fld("zip", "ZIP", false, "33135")}
+      ${person ? fld("memo", L("Concepto", "Memo"), true, L("Alquiler noviembre", "November rent")) : fld("acct", L("Número de cuenta o referencia", "Account or reference no."), true)}
+      <span class="err-msg" id="cf-err"></span>
+      ${pins("checkFields")}
+    </div>
+    ${notice("info", IC.shield, `${L("Antes de guardar, verificamos al destinatario. Tarda unos segundos.", "Before saving, we verify the payee. It takes a few seconds.")}${pins("sardine", person ? "checkPerson" : "sardineDown")}`)}`,
+    foot: `<button type="button" class="btn primary block" data-act="checkNext">${L("Continuar", "Continue")}</button>`
+  };
+};
+R.sardine = () => ({
+  title: "", noBack: true,
+  body: `<div class="spinner"></div><div class="success" style="padding-top:0"><h2>${L("Verificando destinatario…", "Verifying payee…")}</h2><p>${L("Revisamos nombre y dirección.", "We're checking name and address.")}</p>${pins("sardine")}</div>`,
+  after: () => setTimeout(sardineResult, 1400)
+});
+R.sardineNo = () => ({
+  title: "", noBack: true,
+  body: `<div class="success"><span class="mark err">${IC.x}</span><h2>${L("No podemos enviar cheques a este destinatario", "We can't send checks to this payee")}</h2><p>${L("En este momento no podemos procesar pagos a esta persona o empresa. Si creés que es un error, contactanos.", "We can't process payments to this person or company right now. If you think this is a mistake, contact us.")}</p>${pins("sardineDecline")}</div>`,
+  foot: `<button type="button" class="btn primary block" data-act="home">${L("Volver", "Back")}</button><button type="button" class="btn secondary block" data-act="toast" data-id="${L("Soporte: 1-800-DINGO-BL", "Support: 1-800-DINGO-BL")}">${L("Contactar soporte", "Contact support")}</button>`
+});
+R.sardineWait = () => ({
+  title: "", noBack: true,
+  body: `<div class="success"><span class="mark warn">${IC.clock}</span><h2>${L("No pudimos verificar ahora", "We couldn't verify right now")}</h2><p>${L("Guardamos los datos y lo intentamos de nuevo. Te avisamos cuando puedas pagarle. No se envió ningún cheque.", "We saved the details and will try again. We'll let you know when you can pay. No check was sent.")}</p>${pins("sardineDown", "dailyLimit")}</div>`,
+  foot: `<button type="button" class="btn primary block" data-act="sardineRetry">${L("Reintentar ahora", "Retry now")}</button><button type="button" class="btn secondary block" data-act="home">${L("Volver", "Back")}</button>`
+});
+
+/* ================= Navigation ================= */
+const home = () => S.plan === "B" ? "homeB" : "homeA";
+const cur = () => S.stack[S.stack.length - 1];
+function go(r, p = {}) { S.stack.push({ r, p }); S.dir = 1; render(); }
+function back() { if (S.stack.length > 1) { S.stack.pop(); S.dir = -1; render(); } }
+function toHome() { S.stack = [{ r: "start", p: {} }]; if (S.plan === "B") S.stack.push({ r: "introB", p: {} }); S.stack.push({ r: home(), p: {} }); S.dir = -1; S.pick = null; render(); }
+function setPlan(pl, intro = true) {
+  S.plan = pl; S.data = seed(); S.draft = {}; S.pick = null;
+  S.stack = [{ r: "start", p: {} }, { r: pl === "B" && intro ? "introB" : home(), p: {} }];
+  if (pl === "B" && !intro) S.stack.splice(1, 0, { r: "introB", p: {} });
+  S.dir = 1; render();
+}
+
+/* ================= Render ================= */
+function render() {
+  closeSheet(true); closeSheet(true, "#overlay2");
+  S.cur = [];
+  const { r, p } = cur();
+  const v = R[r](p);
+  const bar = v.hideTitle ? "" : `<header class="pbar${v.large ? " large" : ""}">${v.large || v.noBack ? "" : backBtn()}<h1>${v.title || ""}</h1>${v.large ? `<button type="button" class="btn link" data-act="restart">${L(`Plan ${S.plan} ⇄`, `Plan ${S.plan} ⇄`)}</button>` : ""}</header>`;
+  $("#pages").innerHTML = `<section class="page ${S.dir > 0 ? "in" : S.dir < 0 ? "in-back" : ""}">${v.hideTitle ? `<header class="pbar"></header>` : bar}<div class="pbody${v.foot || v.overlayFoot ? " has-foot" : ""}">${v.body}</div>${v.foot ? `<div class="pfoot">${v.foot}</div>` : ""}${v.overlayFoot || ""}</section>`;
+  if (v.after) v.after();
+  renderChrome();
+  renderPanel();
+}
+function renderPanel() {
+  const planNotes = S.plan === "A" ? ["planA", "effort"] : S.plan === "B" ? ["ebProvider", "ebMvp"] : [];
+  const screen = S.cur.filter(x => !planNotes.includes(x));
+  const card = id => { const n = NOTES[id]; return `<div class="ncard k-${n.k}" id="nc-${id}"><span class="ktag">${KIND[n.k].icon}${T(KIND[n.k])}</span><h3>${esc(T(n.t))}</h3><p>${esc(T(n.b))}</p><div class="meta"><b>${L("Responde", "Answers")}:</b> ${n.who.map(w => T(WHO[w])).join(", ")} · <b>${L("Fuente", "Source")}:</b> ${esc(n.src)}</div></div>`; };
+  $("#panel").innerHTML = `<h2>${L("Notas de esta pantalla", "Notes on this screen")} (${screen.length})</h2>
+    <p class="lead">${L("Tocá una etiqueta punteada en el teléfono para abrirla. Acá están todas las de la pantalla actual.", "Tap a dashed tag on the phone to open it. All the ones on the current screen are here.")}</p>
+    ${screen.length ? screen.map(card).join("") : `<p class="empty-n">${L("Esta pantalla no tiene notas.", "No notes on this screen.")}</p>`}
+    ${planNotes.length ? `<div class="grp">${S.plan === "A" ? L("Plan A · siempre presente", "Plan A · always on") : L("Plan B · siempre presente", "Plan B · always on")}</div>${planNotes.map(card).join("")}` : ""}`;
+}
+function renderChrome() {
+  document.documentElement.lang = S.lang;
+  $("#t-title").innerHTML = `DingoBlu · Bill Pay · ${L("Plan A y Plan B", "Plan A and Plan B")}<small>${L("Prototipo de alcance · 21/10/2026 · fuente de verdad: documentación de SoFi/Galileo", "Scope prototype · Oct 21, 2026 · source of truth: SoFi/Galileo docs")}</small>`;
+  document.title = L("DingoBlu Bill Pay · Plan A (sin eBills) y Plan B (con eBills)", "DingoBlu Bill Pay · Plan A (no eBills) and Plan B (with eBills)");
+  const tb = $("#tabs").children; tb[0].textContent = L("Prototipo", "Prototype"); tb[1].textContent = L("Pendientes y acuerdos", "Open items and agreements");
+  [...tb].forEach(b => b.classList.toggle("on", b.dataset.tab === S.tab));
+  const pl = $("#plans").children; pl[0].textContent = L("A · sin eBills", "A · no eBills"); pl[1].textContent = L("B · con eBills", "B · with eBills");
+  [...pl].forEach(b => b.classList.toggle("on", b.dataset.plan === S.plan));
+  [...$("#langs").children].forEach(b => b.classList.toggle("on", b.dataset.lang === S.lang));
+  $("#l-bal").textContent = L("Saldo", "Balance");
+  $("#sim-bal").innerHTML = `<option value="ok" ${!S.low ? "selected" : ""}>$1,284.60</option><option value="low" ${S.low ? "selected" : ""}>$120.00 ${L("(bajo)", "(low)")}</option>`;
+  $("#sim-sardine").innerHTML = [["ok", L("aprueba", "approves")], ["no", L("rechaza", "declines")], ["down", L("no responde", "no answer")]].map(([v, t]) => `<option value="${v}" ${S.sardine === v ? "selected" : ""}>${t}</option>`).join("");
+  $("#l-notes").textContent = L("Mostrar notas", "Show notes");
+  $("#restart").textContent = L("Reiniciar", "Restart");
+  $("#view-proto").hidden = S.tab !== "proto"; $("#view-pending").hidden = S.tab !== "pending";
+  if (S.tab === "pending") renderPending();
+}
+
+/* ================= Pending tab ================= */
+function renderPending() {
+  const order = ["Chap", "SoFi", "Mike", "Rafa", "Equipo"];
+  const card = id => { const n = NOTES[id]; return `<div class="ncard k-${n.k}"><span class="ktag">${KIND[n.k].icon}${T(KIND[n.k])}</span><h3>${esc(T(n.t))}</h3><p>${esc(T(n.b))}</p><div class="meta"><b>${L("Fuente", "Source")}:</b> ${esc(n.src)}</div></div>`; };
+  const open = id => ["ask", "verify", "fee", "block"].includes(NOTES[id].k);
+  const groups = order.map(w => {
+    const ids = Object.keys(NOTES).filter(id => NOTES[id].who[0] === w && open(id));
+    return ids.length ? `<h2>${T(WHO[w])} <span style="color:var(--g500);font-weight:400">(${ids.length})</span></h2><div class="pgrid">${ids.map(card).join("")}</div>` : "";
+  }).join("");
+  const rest = Object.keys(NOTES).filter(id => !open(id));
+  const cmp = [
+    [L("Qué ve el usuario en la home", "What the user sees on the home"), L("Lo que programó, recordatorios propios y pagos en curso. Sin monto adeudado.", "What they scheduled, their own reminders and in-flight payments. No amount owed."), L("Total pendiente, facturas ordenadas por estado, “Estás al día”.", "Total pending, bills ordered by state, “You're all caught up”.")],
+    [L("Monto", "Amount"), L("Libre, lo escribe el usuario (sugerimos el último).", "Free, typed by the user (we suggest the last one)."), L("El total de la eBill; mínimo o total en tarjetas. Libre en billers sin eBill.", "The eBill total; minimum or full on cards. Free on billers without eBills.")],
+    [L("Autopay", "Autopay"), L("Monto fijo, W/M/Q/Y, hasta 5 años. Mike: quizás no el día 1.", "Fixed amount, W/M/Q/Y, up to 5 years. Mike: maybe not day one."), L("“Lo que diga la factura”, con tope. Lo armamos nosotros encima de SoFi.", "“Whatever the bill says”, with a cap. Built by us on top of SoFi.")],
+    [L("Vencimientos", "Due dates"), L("Solo si el usuario los carga (oportunidad: recordatorios).", "Only if the user sets them (opportunity: reminders)."), L("Vienen del proveedor.", "From the provider.")],
+    [L("Cheque", "Check"), L("Plan B al agregar: empresa que no aparece o persona. Sardine.", "Plan B when adding: unlisted company or person. Sardine."), L("Igual que A.", "Same as A.")],
+    [L("Proveedores", "Providers"), "SoFi/Galileo + Sardine", L("SoFi/Galileo + Sardine + proveedor de eBills (a definir)", "SoFi/Galileo + Sardine + eBill provider (TBD)")],
+    [L("Datos que guardamos", "Data we store"), L("Recordatorios, contador del límite, auditoría de Sardine, mapeo de IDs.", "Reminders, limit counter, Sardine audit, ID mapping."), L("Lo de A + conexiones con cada biller, facturas descartadas, emparejamiento.", "A's + per-biller connections, dismissed bills, matching.")],
+    [L("Esfuerzo (Rafa)", "Effort (Rafa)"), L("Base M–L; cheques +40–60 %.", "Base M–L; checks +40–60%."), L("L–XL y bloquea hasta elegir proveedor.", "L–XL and blocked until a provider is chosen.")],
+    [L("Para noviembre", "For November"), L("Sí, es el MVP probable.", "Yes, likely MVP."), L("Probablemente no.", "Probably not.")]
+  ];
+  $("#view-pending").innerHTML = `
+    <h2 style="margin-top:6px">${L("Plan A vs. Plan B en una mirada", "Plan A vs. Plan B at a glance")}</h2>
+    <table class="cmp"><tr><th style="width:20%"></th><th>${L("A · sin eBills (SoFi/Galileo)", "A · no eBills (SoFi/Galileo)")}</th><th>${L("B · con eBills", "B · with eBills")}</th></tr>${cmp.map(r => `<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join("")}</table>
+    <h2>${L("Qué hay que acordar o responder, por persona", "What needs an answer, by person")}</h2>
+    <p class="lead">${L("Preguntas abiertas, cosas a verificar, costos a acordar y bloqueantes. Cada tarjeta dice de dónde sale.", "Open questions, things to verify, costs to agree and blockers. Each card cites its source.")}</p>
+    <div class="legend">${["block", "ask", "verify", "fee"].map(k => `<span class="ktag k-${k}">${KIND[k].icon}${T(KIND[k])}</span>`).join("")}</div>
+    ${groups}
+    <h2>${L("Decisiones, riesgos y oportunidades ya explicadas", "Decisions, risks and opportunities already explained")} <span style="color:var(--g500);font-weight:400">(${rest.length})</span></h2>
+    <div class="pgrid">${rest.map(card).join("")}</div>`;
+}
+
+/* ================= Sheets and toasts ================= */
+/* Two layers: #overlay for product sheets, #overlay2 for note sheets, so a note never replaces an open form. */
+const sheetTimers = {};
+function openSheet(html, sel = "#overlay", closeAct = "closeSheet") {
+  const o = $(sel);
+  clearTimeout(sheetTimers[sel]);
+  o.innerHTML = `<div class="scrim" data-act="${closeAct}"></div><div class="sheet" role="dialog" aria-modal="true"><div class="grip"></div>${html}</div>`;
+  o.classList.add("open"); requestAnimationFrame(() => o.classList.add("show"));
+  renderPanel();
+}
+function closeSheet(now, sel = "#overlay") {
+  const o = $(sel); if (!o.classList.contains("open")) return;
+  o.classList.remove("show");
+  clearTimeout(sheetTimers[sel]);
+  if (now) { o.classList.remove("open"); o.innerHTML = ""; } else sheetTimers[sel] = setTimeout(() => { o.classList.remove("open"); o.innerHTML = ""; }, 260);
+}
+function noteSheet(id) {
+  const n = NOTES[id];
+  openSheet(`<div class="sh-head"><span class="ktag k-${n.k}" style="justify-self:start">${KIND[n.k].icon}${T(KIND[n.k])}</span><h2>${esc(T(n.t))}</h2></div>
+    <div class="sh-body"><p>${esc(T(n.b))}</p><p class="meta"><b>${L("Responde", "Answers")}:</b> ${n.who.map(w => T(WHO[w])).join(", ")}<br><b>${L("Fuente", "Source")}:</b> ${esc(n.src)}</p></div>
+    <div class="sh-foot"><button type="button" class="btn secondary block" data-act="closeNote">${L("Cerrar", "Close")}</button></div>`, "#overlay2", "closeNote");
+  const c = $(`#nc-${id}`);
+  if (c) { c.scrollIntoView({ block: "nearest", behavior: "smooth" }); c.classList.add("flash"); setTimeout(() => c.classList.remove("flash"), 1400); }
+}
+function toast(msg) { const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; $("#toasts").appendChild(t); setTimeout(() => t.remove(), 2600); }
+
+/* ================= Actions ================= */
+function sardineResult() {
+  if (cur().r !== "sardine") return;
+  if (S.sardine === "no") { S.stack[S.stack.length - 1] = { r: "sardineNo", p: {} }; render(); return; }
+  if (S.sardine === "down") { S.stack[S.stack.length - 1] = { r: "sardineWait", p: {} }; render(); return; }
+  const f = S.draft.check; const id = nid();
+  S.data.billers.push({ id, name: f.name, kind: "check", person: f.type === "person", acct: f.acct || "NA", addr: `${f.street}${f.apt ? ", " + f.apt : ""}, ${f.city}, ${f.state} ${f.zip}`, sardineAt: TODAY });
+  S.stack = [{ r: "start", p: {} }, ...(S.plan === "B" ? [{ r: "introB", p: {} }] : []), { r: home(), p: {} }, { r: "added", p: { id } }];
+  S.dir = 1; render();
+}
+function createBillerFromDraft() {
+  const a = S.draft.add; const x = dirById(a.dir);
+  if (!S.data.billers.some(b => b.id === x.id)) S.data.billers.push({ id: x.id, name: x.name, kind: "rpps", acct: a.acct.slice(-4), eb: S.plan === "B" ? !!a.connected : x.eb });
+  S.stack = [{ r: "start", p: {} }, ...(S.plan === "B" ? [{ r: "introB", p: {} }] : []), { r: home(), p: {} }, { r: "added", p: { id: x.id } }];
+  S.dir = 1; render();
+}
+const A = {
+  back, home: toHome, go: id => go(id), noop: () => {},
+  plan: id => setPlan(id),
+  restart: () => { S.plan = null; S.data = null; S.draft = {}; S.pick = null; S.tab = "proto"; S.stack = [{ r: "start", p: {} }]; S.dir = -1; render(); },
+  closeSheet: () => closeSheet(),
+  closeNote: () => closeSheet(false, "#overlay2"),
+  toast: id => toast(id),
+  biller: id => go("biller", { id }),
+  bill: id => go("bill", { id }),
+  payment: id => go("payment", { id }),
+  pay: id => { S.draft.pay = null; go("pay", { id }); },
+  pickPay: () => openSheet(`<div class="sh-head"><h2>${L("¿A quién le pagás?", "Who are you paying?")}</h2></div><div class="sh-body"><ul class="list">${S.data.billers.map(b => row({ act: "pay", id: b.id, lead: logo(b), name: esc(b.name), sub: methodTag(b) })).join("")}</ul></div><div class="sh-foot"><button type="button" class="btn secondary block" data-act="closeSheet">${L("Cerrar", "Close")}</button></div>`),
+  autopay: id => { S.draft.ap = null; go("autopay", { id }); },
+  autopayB: id => { S.draft.apb = null; go("autopayB", { id }); },
+  add: () => { S.draft.search = null; go("addType"); },
+  addKind: id => { if (id === "rpps") { S.draft.search = null; go("search"); } else { S.draft.check = { type: id }; go("checkForm"); } },
+  pickDir: id => { S.draft.add = { dir: id }; go("acct"); },
+  sugg: v => { S.draft.pay.amount = v; $("#amt").value = v; updatePay(); },
+  when: v => { S.draft.pay.when = v; render(); },
+  apFreq: v => { S.draft.ap.freq = v; render(); },
+  apbMode: v => { S.draft.apb.mode = v; if (v === "fixed") { const id = S.draft.apb.id; S.draft.ap = null; S.stack[S.stack.length - 1] = { r: "autopay", p: { id } }; } render(); },
+  apbBefore: v => { S.draft.apb.before = Number(v); render(); },
+  billAmt: v => { S.draft.billAmt.v = Number(v); render(); },
+  pickMode: () => { S.pick = Array.isArray(S.pick) ? null : []; render(); },
+  togglePick: id => { const i = S.pick.indexOf(id); i < 0 ? S.pick.push(id) : S.pick.splice(i, 1); render(); },
+  reviewPick: () => { S.draft.review = { items: S.pick.map(id => { const b = billById(id); return { biller: b.biller, bill: id, amount: b.amount }; }), schedule: false }; go("review"); },
+  payBill: id => { const b = billById(id); S.draft.review = { items: [{ biller: b.biller, bill: id, amount: S.draft.billAmt && S.draft.billAmt.id === id ? S.draft.billAmt.v : b.amount }], schedule: false }; go("review"); },
+  scheduleBill: id => { const b = billById(id); S.draft.review = { items: [{ biller: b.biller, bill: id, amount: S.draft.billAmt && S.draft.billAmt.id === id ? S.draft.billAmt.v : b.amount }], schedule: true, date: b.due }; go("review"); },
+  dismiss: id => { billById(id).dismissed = true; toast(L("La sacamos de pendientes. No se cobró nada.", "Removed from pending. Nothing was charged.")); back(); },
+  reviewPay: id => {
+    const pr = payProblem();
+    if (pr && (pr.soft || pr.msg || pr.short)) { if (pr.soft) toast(L("Escribí un monto.", "Enter an amount.")); return; }
+    const dr = S.draft.pay;
+    S.draft.review = { items: [{ biller: id, amount: parseAmt(dr.amount) }], schedule: dr.when === "later", date: dr.date };
+    go("review");
+  },
+  confirm: () => {
+    const rv = S.draft.review; const ids = [];
+    rv.items.forEach(x => {
+      const b = biller(x.biller); const id = nid(); ids.push(id);
+      const status = rv.schedule ? "scheduled" : b.kind === "check" ? "preparing" : "processing";
+      S.data.payments.push({ id, biller: x.biller, bill: x.bill, amount: x.amount, date: rv.schedule ? rv.date : TODAY, created: TODAY, status });
+      if (!rv.schedule) S.data.balance = round2(S.data.balance - x.amount);
+    });
+    S.pick = null; S.draft.done = ids;
+    S.stack = [{ r: "start", p: {} }, ...(S.plan === "B" ? [{ r: "introB", p: {} }] : []), { r: home(), p: {} }, { r: "done", p: {} }];
+    S.dir = 1; render();
+  },
+  cancelSched: id => { S.data.payments.find(p => p.id === id).status = "canceled"; toast(L("Pago cancelado. No se debitó nada.", "Payment canceled. Nothing was debited.")); render(); },
+  cancelCheck: id => openSheet(`<div class="sh-head"><h2>${L("¿Cancelar el cheque?", "Cancel the check?")}</h2><p>${L("Si ya se imprimió, solo lo puede cancelar soporte. La plata vuelve en 1 a 3 días hábiles.", "If it's already printed, only support can cancel it. Money returns in 1–3 business days.")}</p></div>
+    <div class="sh-body"><div class="facts">${fact(L("Comisión", "Fee"), `<span style="color:var(--warn)">${L("A definir (CHC)", "To be defined (CHC)")}</span>`)}${fact(L("Después", "Then"), L("Podés mandarlo de nuevo", "You can send it again"))}</div>${pins("cancelCheck", "checkFee")}</div>
+    <div class="sh-foot"><button type="button" class="btn danger block" data-act="cancelCheckYes" data-id="${id}">${L("Cancelar cheque", "Cancel check")}</button><button type="button" class="btn secondary block" data-act="closeSheet">${L("Volver", "Back")}</button></div>`),
+  cancelCheckYes: id => { S.data.payments.find(p => p.id === id).status = "cancelReq"; toast(L("Cancelación pedida. SoFi la confirma con el banco en ~2 días.", "Cancellation requested. SoFi confirms with the bank in ~2 days.")); render(); },
+  apSave: id => {
+    const dr = S.draft.ap; dr.amount = $("#apamt").value; dr.next = $("#apnext").value; dr.years = $("#apyears").value;
+    const a = parseAmt(dr.amount); if (!(a > 0)) { toast(L("Escribí un monto fijo.", "Enter a fixed amount.")); return; }
+    const end = ISO(new Date(D(dr.next).getFullYear() + Number(dr.years), D(dr.next).getMonth(), D(dr.next).getDate()));
+    biller(id).autopay = { amount: a, freq: dr.freq, next: dr.next, end };
+    toast(L("Autopay activo.", "Autopay on.")); back();
+  },
+  apbSave: id => { const dr = S.draft.apb; const m = parseAmt($("#apbmax").value); biller(id).autopay = { mode: "full", before: dr.before, max: m > 0 ? m : null }; toast(L("Autopay activo.", "Autopay on.")); back(); },
+  apEnd: id => { biller(id).autopay = null; toast(L("Autopay terminado. Se cancelan todas las cuotas que siguen.", "Autopay ended. All following runs are canceled.")); back(); },
+  reminder: id => {
+    const b = biller(id); const r = b.reminder || { day: 10, before: 2 };
+    openSheet(`<div class="sh-head"><h2>${L(`Recordatorio para ${b.name}`, `Reminder for ${b.name}`)}</h2><p>${L("No vemos tus facturas: decinos cuándo vence y te avisamos antes.", "We can't see your bills: tell us when it's due and we'll remind you.")}</p></div>
+      <div class="sh-body"><div class="row2"><div class="field"><label for="rmday">${L("Día del mes", "Day of month")}</label><select class="input" id="rmday">${Array.from({ length: 28 }, (_, i) => i + 1).map(n => `<option ${n === r.day ? "selected" : ""}>${n}</option>`).join("")}</select></div>
+      <div class="field"><label for="rmbefore">${L("Avisarme", "Notify me")}</label><select class="input" id="rmbefore">${[1, 2, 3, 5].map(n => `<option value="${n}" ${n === r.before ? "selected" : ""}>${L(`${n} día${n > 1 ? "s" : ""} antes`, `${n} day${n > 1 ? "s" : ""} before`)}</option>`).join("")}</select></div></div>
+      ${pins("reminders", "arrival")}</div>
+      <div class="sh-foot"><button type="button" class="btn primary block" data-act="reminderSave" data-id="${id}">${L("Guardar", "Save")}</button>${b.reminder ? `<button type="button" class="btn ghost-danger block" data-act="reminderOff" data-id="${id}">${L("Quitar recordatorio", "Remove reminder")}</button>` : ""}</div>`);
+  },
+  reminderSave: id => { biller(id).reminder = { day: Number($("#rmday").value), before: Number($("#rmbefore").value) }; toast(L("Recordatorio guardado.", "Reminder saved.")); render(); },
+  reminderOff: id => { biller(id).reminder = null; render(); },
+  remove: id => {
+    const b = biller(id); const n = paysOf(id).filter(p => p.status === "scheduled").length + (b.autopay ? 1 : 0);
+    openSheet(`<div class="sh-head"><h2>${L(`¿Eliminar ${b.name}?`, `Remove ${b.name}?`)}</h2><p>${n ? L(`También cancelamos ${n} pago${n > 1 ? "s" : ""} programado${n > 1 ? "s" : ""} o autopay. Los pagos ya enviados siguen su curso.`, `We'll also cancel ${n} scheduled payment${n > 1 ? "s" : ""} or autopay. Payments already sent continue.`) : L("Los pagos ya enviados siguen su curso.", "Payments already sent continue.")}</p></div>
+      <div class="sh-body">${pins("removeBiller")}</div>
+      <div class="sh-foot"><button type="button" class="btn danger block" data-act="removeYes" data-id="${id}">${L("Eliminar", "Remove")}</button><button type="button" class="btn secondary block" data-act="closeSheet">${L("Volver", "Back")}</button></div>`);
+  },
+  removeYes: id => { S.data.payments.filter(p => p.biller === id && p.status === "scheduled").forEach(p => p.status = "canceled"); S.data.billers = S.data.billers.filter(b => b.id !== id); S.data.bills = S.data.bills.filter(b => b.biller !== id); toast(L("Biller eliminado.", "Biller removed.")); toHome(); },
+  acctNext: () => {
+    const a = S.draft.add; const x = dirById(a.dir); a.acct = $("#ac1").value.replace(/\s/g, ""); a.acct2 = $("#ac2").value.replace(/\s/g, "");
+    const err = !/^\d+$/.test(a.acct) || a.acct.length !== Number(x.mask) ? L(`El formato no coincide: tienen que ser ${x.mask} dígitos (error 485-03).`, `Format doesn't match: it must be ${x.mask} digits (error 485-03).`) : a.acct !== a.acct2 ? L("Los dos números no coinciden.", "The two numbers don't match.") : "";
+    $("#ac-err").textContent = err; if (!err) go("verify");
+  },
+  verifyNext: () => { if (!/^\d{6}$/.test($("#code").value)) { toast(L("Escribí 6 dígitos.", "Enter 6 digits.")); return; } if (S.plan === "B") go("connect"); else createBillerFromDraft(); },
+  connectYes: () => { S.draft.add.connected = true; toast(L("Facturas conectadas.", "Bills connected.")); createBillerFromDraft(); },
+  connectNo: () => { S.draft.add.connected = false; createBillerFromDraft(); },
+  checkNext: () => {
+    const f = S.draft.check; const miss = ["name", "street", "city", "state", "zip"].filter(k => !(f[k] || "").trim());
+    const zipBad = f.zip && !/^\d{5}$/.test(f.zip);
+    $("#cf-err").textContent = miss.length ? L("Completá nombre, calle, ciudad, estado y ZIP.", "Fill in name, street, city, state and ZIP.") : zipBad ? L("El ZIP tiene 5 dígitos. Solo direcciones de EE. UU.", "ZIP has 5 digits. US addresses only.") : "";
+    if (!miss.length && !zipBad) go("sardine");
+  },
+  sardineRetry: () => { S.stack[S.stack.length - 1] = { r: "sardine", p: {} }; render(); }
+};
+
+/* ================= Events ================= */
+document.addEventListener("click", e => {
+  const pn = e.target.closest("[data-note]");
+  if (pn) { e.stopPropagation(); noteSheet(pn.dataset.note); return; }
+  const a = e.target.closest("[data-act]");
+  if (a && A[a.dataset.act]) { A[a.dataset.act](a.dataset.id); return; }
+  const t = e.target.closest("[data-tab]"); if (t) { S.tab = t.dataset.tab; renderChrome(); return; }
+  const p = e.target.closest("[data-plan]"); if (p) { S.tab = "proto"; setPlan(p.dataset.plan, false); return; }
+  const lg = e.target.closest("[data-lang]"); if (lg) { S.lang = lg.dataset.lang; localStorage.setItem("bpab-lang", S.lang); S.dir = 0; render(); }
+});
+document.addEventListener("keydown", e => {
+  const pn = e.target.closest && e.target.closest("[data-note]");
+  if (pn && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); noteSheet(pn.dataset.note); }
+});
+document.addEventListener("input", e => {
+  const t = e.target;
+  if (t.id === "amt") { S.draft.pay.amount = t.value; updatePay(); }
+  else if (t.id === "pdate") { S.draft.pay.date = t.value; }
+  else if (t.id === "sq") { S.draft.search.q = t.value; updateResults(); }
+  else if (t.id === "apwarn") { S.draft.ap.warn = t.checked; }
+  else if (t.dataset.cf) { S.draft.check[t.dataset.cf] = t.value; }
+});
+document.addEventListener("change", e => {
+  const t = e.target;
+  if (t.id === "sst") { S.draft.search.st = t.value; updateResults(); }
+  else if (t.dataset && t.dataset.cf) { S.draft.check[t.dataset.cf] = t.value; }
+  else if (t.id === "sim-bal") { S.low = t.value === "low"; if (S.data) S.data.balance = S.low ? 120 : 1284.60; render(); }
+  else if (t.id === "sim-sardine") { S.sardine = t.value; }
+  else if (t.id === "sim-notes") { S.notes = t.checked; document.body.classList.toggle("no-notes", !S.notes); }
+});
+$("#restart").addEventListener("click", () => A.restart());
+
+function fit() {
+  const avail = window.innerHeight - ($(".top").offsetHeight || 60) - 36;
+  const s = Math.max(.55, Math.min(1, avail / 880));
+  document.documentElement.style.setProperty("--s", s);
+}
+window.addEventListener("resize", fit);
+fit(); render();
+})();
+</script>
+</body>
+</html>
