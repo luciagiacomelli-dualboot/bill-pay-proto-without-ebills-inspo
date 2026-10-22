@@ -329,9 +329,9 @@ input[aria-invalid=true] { border-color: var(--err); }
   <div class="seg" id="plans" hidden style="display:none"><button type="button" data-plan="A"></button><button type="button" data-plan="B"></button></div>
   <label class="ctl"><span id="l-bal"></span><select id="sim-bal"></select></label>
   <label class="ctl"><span>Sardine</span><select id="sim-sardine"></select></label>
-  <label class="sw-notes"><input type="checkbox" id="sim-notes"><span id="l-notes"></span></label>
+  <label class="sw-notes"><input type="checkbox" id="sim-notes" checked><span id="l-notes"></span></label>
   <button type="button" class="mini" id="restart"></button>
-  <div class="seg" id="langs"><button type="button" data-lang="es">ES</button><button type="button" data-lang="en">EN</button></div>
+  <div class="seg" id="langs" hidden style="display:none"><button type="button" data-lang="es">ES</button><button type="button" data-lang="en">EN</button></div>
 </div></header>
 
 <div id="view-proto" class="lab">
@@ -853,7 +853,7 @@ function seed() {
 
 /* ================= State ================= */
 const S = {
-  lang: localStorage.getItem("bpab-lang") || "es", tab: "proto", plan: null, notes: false, low: false, sardine: "ok",
+  lang: "en", homeTab: "pay", tab: "proto", plan: null, notes: true, low: false, sardine: "ok",
   stack: [{ r: "start", p: {} }], data: null, pick: null, draft: {}, cur: [], dir: 1
 };
 let seq = 100;
@@ -991,11 +991,12 @@ R.homeA = () => {
     ${!B.length ? `<div class="success" style="padding-top:28px"><span class="mark">${IC.plus}</span><h2>${L("Todavía no agregaste ninguna empresa", "You haven't added anyone yet")}</h2><p>${L("Agregá una empresa o un destinatario para empezar a pagar.", "Add a company or a payee to start paying.")}</p><button type="button" class="btn primary" data-act="add">${IC.plus}${L("Agregar", "Add")}</button></div>` : `
     <div class="acts" style="padding:4px 16px 8px"><button type="button" class="btn primary sm" data-act="pickPay">${IC.send}${L("Hacer un pago", "Make a payment")}</button><button type="button" class="btn secondary sm" data-act="add">${IC.plus}${L("Agregar", "Add")}</button></div>
     ${!biller("duke") ? "" : notice("info", IC.star, `<b>${L("¿Pagaste a Duke 3 meses seguidos cerca del 10?", "Paid Duke 3 months in a row around the 10th?")}</b><br>${L("Podemos recordártelo cada mes.", "We can remind you every month.")} <button type="button" class="btn link" data-act="reminder" data-id="duke">${L("Configurar", "Set up")}</button>${pins("pattern")}`)}
-    <section class="sec"><div class="sec-head"><h2>${L("Próximos", "Upcoming")}${total ? ` <span class="num" style="font-weight:400;color:var(--g500)">· ${money(total)} ${L("programado", "scheduled")}</span>` : ""}</h2>${pins("reminders", "noEbillHome", "schedSource")}</div>
-      ${up.length ? `<ul class="list">${upRows}</ul>` : notice("info", IC.info, L("No tenés nada programado. Programá un pago o activá un recordatorio desde cada empresa.", "Nothing scheduled. Schedule a payment or set a reminder from any payee."))}</section>`}
-    ${flight.length ? `<section class="sec"><div class="sec-head"><h2>${L("En curso", "In flight")}</h2>${pins("inflight", "checkNoTrack")}</div><ul class="list">${flRows}</ul></section>` : ""}
-    <section class="sec"><div class="sec-head"><h2>${L("Tus billers", "Your billers")}</h2>${pins("logos", "categories", "activityInBiller")}</div>
-      <ul class="list">${bRows}<li><button type="button" class="add-row" data-act="add"><span class="ic">${IC.plus}</span>${L("Agregar un biller", "Add a biller")}</button></li></ul></section>
+    <div style="padding:4px 16px 10px"><div class="seg" style="display:flex;width:100%"><button type="button" style="flex:1" class="${S.homeTab === "pay" ? "on" : ""}" data-act="homeTab" data-id="pay">${L("Pagos", "Payments")}</button><button type="button" style="flex:1" class="${S.homeTab === "bill" ? "on" : ""}" data-act="homeTab" data-id="bill">${L("Billers", "Billers")}</button></div></div>
+    ${S.homeTab === "bill" ? "" : `<section class="sec"><div class="sec-head"><h2>${L("Próximos", "Upcoming")}${total ? ` <span class="num" style="font-weight:400;color:var(--g500)">· ${money(total)} ${L("programado", "scheduled")}</span>` : ""}</h2>${pins("reminders", "noEbillHome", "schedSource")}</div>
+      ${up.length ? `<ul class="list">${upRows}</ul>` : notice("info", IC.info, L("No tenés nada programado. Programá un pago o activá un recordatorio desde cada empresa.", "Nothing scheduled. Schedule a payment or set a reminder from any payee."))}</section>`}`}
+    ${S.homeTab === "bill" ? "" : flight.length ? `<section class="sec"><div class="sec-head"><h2>${L("En curso", "In flight")}</h2>${pins("inflight", "checkNoTrack")}</div><ul class="list">${flRows}</ul></section>` : ""}
+    ${S.homeTab !== "bill" ? "" : `<section class="sec"><div class="sec-head"><h2>${L("Tus billers", "Your billers")}</h2>${pins("logos", "categories", "activityInBiller")}</div>
+      <ul class="list">${bRows}<li><button type="button" class="add-row" data-act="add"><span class="ic">${IC.plus}</span>${L("Agregar un biller", "Add a biller")}</button></li></ul></section>`}
 `
   };
 };
@@ -1535,6 +1536,7 @@ const A = {
   autopay: id => { S.draft.ap = null; go("autopay", { id }); },
   autopayB: id => { S.draft.apb = null; go("autopayB", { id }); },
   add: () => { S.draft.search = null; go("search"); },
+  homeTab: id => { S.homeTab = id; render(); },
   addKind: id => { if (id === "rpps") { S.draft.search = null; go("search"); } else { S.draft.check = { type: id }; go("checkForm"); } },
   pickDir: id => { S.draft.add = { dir: id }; go("acct"); },
   sugg: v => { S.draft.pay.amount = v; $("#amt").value = v; updatePay(); },
@@ -1660,7 +1662,7 @@ function fit() {
   document.documentElement.style.setProperty("--s", s);
 }
 window.addEventListener("resize", fit);
-fit(); document.body.classList.add("no-notes"); setPlan("A");
+fit(); setPlan("A");
 })();
 </script>
 </body>
