@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>DingoBlu Bill Pay · Plan A (sin eBills) y Plan B (con eBills)</title>
+<title>DingoBlu Bill Pay · prototype</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@500&display=swap">
@@ -84,10 +84,12 @@ svg.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor;
 
 /* ---------- Note pins (inside the phone) ---------- */
 .pins { display: flex; flex-wrap: wrap; gap: 6px; }
-.pin { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px 0 6px; border-radius: 999px; border: 1px dashed var(--kc); background: var(--kb); color: var(--kc); font: 600 11px/1 var(--ui); letter-spacing: 0; white-space: nowrap; vertical-align: middle; }
+.pin { display: inline-flex; align-items: center; justify-content: center; gap: 0; width: 20px; height: 20px; padding: 0; font-size: 0 !important; border-radius: 999px; border: 1.5px solid var(--kc); background: var(--kb); color: var(--kc); font: 600 11px/1 var(--ui); letter-spacing: 0; white-space: nowrap; vertical-align: middle; }
 .pin svg.i { width: 12px; height: 12px; stroke-width: 2.2; }
 .pin:hover { border-style: solid; }
 body.no-notes .pin, body.no-notes .pins { display: none !important; }
+body.no-notes .panel { display: none; }
+body.no-notes .lab { grid-template-columns: auto; }
 
 /* ---------- Pages ---------- */
 .page { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--g50); }
@@ -324,10 +326,10 @@ input[aria-invalid=true] { border-color: var(--err); }
 <header class="top"><div class="top-in">
   <h1 id="t-title"></h1>
   <div class="seg" id="tabs" hidden style="display:none"><button type="button" data-tab="proto"></button><button type="button" data-tab="pending"></button></div>
-  <div class="seg" id="plans"><button type="button" data-plan="A"></button><button type="button" data-plan="B"></button></div>
+  <div class="seg" id="plans" hidden style="display:none"><button type="button" data-plan="A"></button><button type="button" data-plan="B"></button></div>
   <label class="ctl"><span id="l-bal"></span><select id="sim-bal"></select></label>
   <label class="ctl"><span>Sardine</span><select id="sim-sardine"></select></label>
-  <label class="sw-notes"><input type="checkbox" id="sim-notes" checked><span id="l-notes"></span></label>
+  <label class="sw-notes"><input type="checkbox" id="sim-notes"><span id="l-notes"></span></label>
   <button type="button" class="mini" id="restart"></button>
   <div class="seg" id="langs"><button type="button" data-lang="es">ES</button><button type="button" data-lang="en">EN</button></div>
 </div></header>
@@ -408,7 +410,7 @@ const KIND = {
   opp:    { icon: IC.star,   es: "Oportunidad",      en: "Opportunity" },
   block:  { icon: IC.lock,   es: "Bloqueante",       en: "Blocker" }
 };
-const WHO = { Chap: "Chap", SoFi: { es: "SoFi (vía Chap)", en: "SoFi (via Chap)" }, Mike: "Mike / Allison", Rafa: "Rafa", Equipo: { es: "Equipo (Lula, Rafa, Mati)", en: "Team (Lula, Rafa, Mati)" } };
+const WHO = { Chap: "Chap", SoFi: { es: "SoFi (vía Chap)", en: "SoFi (via Chap)" }, Mike: "DingoBlu", Rafa: "Dualboot (tech)", Equipo: { es: "Dualboot", en: "Dualboot" } };
 
 /* ================= Notes =================
    k: kind · s: short pin label · t: title · b: body · src: source · who: who answers. */
@@ -418,33 +420,33 @@ const NOTES = {
   planA: N("why", ["Mike", "Chap"],
     { es: "Plan A", en: "Plan A" },
     { es: "Plan A: solo lo que trae SoFi/Galileo", en: "Plan A: only what SoFi/Galileo provides" },
-    { es: "Es lo que la documentación de SoFi soporta hoy: buscar y agregar billers, pagar con un monto que escribe el usuario, programar, autopay de monto fijo y cheque en papel. Mike (21/10): el contrato dice “eBills” sin definirlas, y la lectura mínima es un Bill Pay manual (biller, número de cuenta, monto). Es el MVP más probable.",
-      en: "This is what the SoFi docs support today: search and add billers, pay an amount the user types, schedule, fixed-amount autopay and paper checks. Mike (Oct 21): the contract says “eBills” without defining them, and the minimal reading is a manual Bill Pay (biller, account number, amount). Most likely MVP." },
-    "SoFi Bill Pay overview + lifecycle; Granola 21/10 (Mike)"),
+    { es: "Es lo que la documentación de SoFi soporta hoy: buscar y agregar billers, pagar con un monto que escribe el usuario, programar, autopay de monto fijo y cheque en papel. Se confirmó que el eBilling verdadero (monto y vencimiento desde SoFi) queda fuera por ahora; este es el alcance actual.",
+      en: "This is what the SoFi docs support today: search and add billers, pay an amount the user types, schedule, fixed-amount autopay and paper checks. It was confirmed that true eBilling (amount and due date from SoFi) is out of scope for now; this is the current scope." },
+    "SoFi Bill Pay overview + lifecycle"),
   effort: N("why", ["Rafa", "Mike"],
     { es: "Esfuerzo", en: "Effort" },
-    { es: "Esfuerzo relativo (estimación de Rafa)", en: "Relative effort (Rafa's estimate)" },
+    { es: "Esfuerzo relativo", en: "Relative effort" },
     { es: "Solo electrónico: ~10–12 casos borde, tamaño base M–L. Cheques: +40–60 % sobre esa base (unas 6–8 pantallas o estados extra, más Sardine y un seguimiento de estados aparte). eBills: L–XL y bloquea el resto hasta elegir proveedor. Es un conteo de casos borde, no velocidad del equipo.",
       en: "Electronic only: ~10–12 edge cases, base size M–L. Checks: +40–60% on top (about 6–8 extra screens or states, plus Sardine and separate status tracking). eBills: L–XL and blocks the rest until a provider is chosen. It counts edge cases, not team velocity." },
-    "Rafa, análisis de preguntas abiertas 21/10 §4"),
+    "Dualboot analysis of SoFi docs"),
   ebProvider: N("block", ["Mike", "Chap"],
     { es: "Falta proveedor", en: "No provider" },
     { es: "No hay proveedor de eBills", en: "There is no eBill provider" },
-    { es: "La documentación de SoFi no tiene ningún endpoint de facturas, montos adeudados ni vencimientos. Hace falta un segundo proveedor. Mike (21/10): si es un socio externo, la relación comercial la tiene que armar el equipo de Chap, y no se sabe cuánto tarda. El SOW (épico 7) dice “Bill Pay & eBills” sin definir qué son.",
-      en: "The SoFi docs have no endpoint for bills, amounts owed or due dates. A second provider is needed. Mike (Oct 21): if it's an external partner, Chap's team has to set up the business relationship, and nobody knows how long that takes. The SOW (Epic 7) says “Bill Pay & eBills” without defining them." },
-    "SoFi Bill Pay endpoints; SOW 2026-04-17; Granola 21/10"),
+    { es: "La documentación de SoFi no tiene ningún endpoint de facturas, montos adeudados ni vencimientos. Hace falta un segundo proveedor. Si es un socio externo, la relación comercial la tiene que armar DingoBlu, y no se sabe cuánto tarda. El SOW (épico 7) dice “Bill Pay & eBills” sin definir qué son.",
+      en: "The SoFi docs have no endpoint for bills, amounts owed or due dates. A second provider is needed. If it's an external partner, DingoBlu has to set up the business relationship, and nobody knows how long that takes. The SOW (Epic 7) says “Bill Pay & eBills” without defining them." },
+    "SoFi Bill Pay endpoints"),
   ebMvp: N("block", ["Mike", "Chap"],
     { es: "¿Entra en el MVP?", en: "In the MVP?" },
     { es: "Probablemente no entra en el MVP de noviembre", en: "Probably not in the November MVP" },
     { es: "MVP en noviembre. Sin proveedor elegido, sin contrato y sin plazos, el Plan B no se puede comprometer para esa fecha. Propuesta: lanzar con el Plan A y diseñar la home para que el Plan B se sume después sin rehacerla.",
       en: "MVP in November. With no provider, contract or timeline, Plan B can't be committed for that date. Proposal: launch with Plan A and design the home so Plan B can be added later without rebuilding it." },
-    "Board de alineación 21/10; Granola 21/10 (Mike)"),
+    "Dualboot analysis of SoFi docs"),
   ebCost: N("fee", ["Mike", "Chap"],
     { es: "Contrato y costo", en: "Contract and cost" },
     { es: "Contrato y costo del proveedor de eBills", en: "eBill provider contract and cost" },
     { es: "Quién elige al proveedor, quién lo paga y con qué modelo (por usuario, por biller conectado o por factura). Los proveedores de presentación de facturas suelen cobrar por uso [conocimiento general, no verificado].",
       en: "Who picks the provider, who pays for it and with what model (per user, per connected biller or per bill). Bill presentment providers usually charge per use [general knowledge, not verified]." },
-    "Conocimiento general; pregunta M1 del board"),
+    "Conocimiento general"),
 
   /* ---- Plan A: home ---- */
   noEbillHome: N("why", ["Equipo"],
@@ -452,7 +454,7 @@ const NOTES = {
     { es: "Sin eBills no sabemos cuánto debe ni cuándo vence", en: "Without eBills we don't know what's owed or when" },
     { es: "La home solo puede mostrar lo que el usuario programó (pagos y autopay), lo que él mismo cargó como recordatorio y lo que ya pagó. No decimos “Estás al día” ni “Todavía no llegó tu factura”: las dos frases prometen algo que no sabemos.",
       en: "The home can only show what the user scheduled (payments and autopay), the reminders they set themselves and what they already paid. We don't say “You're all caught up” or “Your bill hasn't arrived yet”: both promise something we don't know." },
-    "SoFi endpoints; doc sesión 2 §13–14"),
+    "SoFi endpoints"),
   schedSource: N("verify", ["Rafa", "SoFi"],
     { es: "¿De dónde sale?", en: "Data source" },
     { es: "¿El total programado incluye las próximas cuotas del autopay?", en: "Does the scheduled total include upcoming autopay runs?" },
@@ -462,33 +464,33 @@ const NOTES = {
   activityInBiller: N("why", ["Equipo"],
     { es: "Actividad", en: "Activity" },
     { es: "La actividad va dentro de cada biller, no en la home", en: "Activity lives inside each biller, not on the home" },
-    { es: "Acordado el 20/10 (propuesta P9). En la home solo mostramos lo que está en curso (pagos procesando o cheques en camino), porque el usuario necesita saber qué está pasando con su plata.",
-      en: "Agreed Oct 20 (proposal P9). The home only shows what's in flight (processing payments or checks in the mail), because the user needs to know what's happening with their money." },
-    "Granola 20/10; board de alineación P9"),
+    { es: "Propuesta: En la home solo mostramos lo que está en curso (pagos procesando o cheques en camino), porque el usuario necesita saber qué está pasando con su plata.",
+      en: "Proposal: The home only shows what's in flight (processing payments or checks in the mail), because the user needs to know what's happening with their money." },
+    "Dualboot analysis of SoFi docs"),
   logos: N("ask", ["Chap", "Equipo"],
     { es: "Logos", en: "Logos" },
     { es: "Logos: ¿los queremos, sí o no?", en: "Logos: do we want them or not?" },
     { es: "Galileo no entrega logos. Plaid no sirve: solo enriquece transacciones de cuentas externas del usuario, nunca billers de SoFi. Opciones: iniciales con color (cero dependencia, es lo que se ve acá), logos curados para los ~50 billers más comunes, o un servicio pago de logos por dominio [conocimiento general]. Propuesta: iniciales en el MVP y decidir después si vale pagar un servicio.",
       en: "Galileo supplies no logos. Plaid doesn't help: it only enriches transactions from the user's external accounts, never SoFi billers. Options: colored initials (no dependency, what you see here), curated logos for the ~50 most common billers, or a paid logo-by-domain service [general knowledge]. Proposal: initials in the MVP, decide later whether a service is worth paying for." },
-    "Rafa, análisis §1 #18; doc sesión 2 §14"),
+    "Dualboot analysis of SoFi docs"),
   categories: N("ask", ["SoFi"],
     { es: "Categorías", en: "Categories" },
     { es: "Sin categorías en el directorio", en: "No categories in the directory" },
     { es: "La respuesta documentada de la búsqueda solo trae el ID RPPS y las máscaras del número de cuenta. Pedirle a SoFi el esquema completo de la respuesta: si trae rubro o dirección, podemos agrupar y ordenar (Luz, Celular, Internet). Si no, agrupamos por método de pago o dejamos que el usuario elija la categoría.",
       en: "The documented search response only has the RPPS ID and the account-number masks. Ask SoFi for the full response schema: if it includes category or address we can group and sort (Electric, Phone, Internet). If not, we group by payment method or let the user pick a category." },
-    "SoFi endpoints (Search Biller Directory); pregunta C2"),
+    "SoFi endpoints (Search Biller Directory)"),
   reminders: N("opp", ["Chap"],
     { es: "Recordatorios", en: "Reminders" },
     { es: "Recordatorio de vencimiento cargado por el usuario", en: "User-set due-date reminder" },
     { es: "Sin eBills no sabemos cuándo vence. Pero el usuario sí: le pedimos el día del mes y le avisamos antes. Cubre el dolor que contó Allison el 14/10 (le cortaron el agua por olvidarse) sin otro proveedor. La contra: hay que guardar un dato propio, y Chap prefiere no guardar datos de Bill Pay.",
       en: "Without eBills we don't know the due date, but the user does: we ask for the day of the month and remind them before it. It addresses the pain Allison described on Oct 14 (her water was shut off because she forgot) with no extra provider. Downside: we have to store our own data, and Chap prefers not to store Bill Pay data." },
-    "Reunión con Chap 14/10 (30:20); doc sesión 2 §14"),
+    "Reunión con Chap 14/10 (30:20)"),
   pattern: N("opp", ["Equipo"],
     { es: "Detectar patrón", en: "Spot a pattern" },
     { es: "“Pagaste a Duke 3 meses seguidos cerca del 10”", en: "“You paid Duke 3 months in a row around the 10th”" },
     { es: "Con el historial de Galileo (Get Bill Payment History) podemos sugerir un recordatorio o un autopay sin otro proveedor. Es una sugerencia; nunca se activa sola.",
       en: "Galileo's history (Get Bill Payment History) lets us suggest a reminder or autopay with no extra provider. It's a suggestion; it never turns on by itself." },
-    "Doc sesión 2 §14"),
+    "Dualboot analysis of SoFi docs"),
   inflight: N("why", ["Equipo"],
     { es: "En curso", en: "In flight" },
     { es: "Lo que está en camino", en: "What's on its way" },
@@ -498,17 +500,29 @@ const NOTES = {
 
   /* ---- Add biller ---- */
   addTypes: N("why", ["Equipo"],
-    { es: "3 entradas", en: "3 entry points" },
-    { es: "Tres formas de agregar, y el cheque solo como plan B", en: "Three ways to add, check only as plan B" },
-    { es: "1) Empresa de la red RPPS (~44.000): pago electrónico. 2) Empresa que no aparece en la búsqueda (error 421-01): cheque en papel. 3) Una persona (alquiler, contratista): cheque, con número de cuenta “NA”. La plata sale siempre de la cuenta Deposit; lo que cambia es cómo llega.",
-      en: "1) A company on the RPPS network (~44,000): electronic payment. 2) A company that doesn't show up in search (error 421-01): paper check. 3) A person (rent, contractor): check, with account number “NA”. Money always leaves the Deposit account; only the delivery changes." },
-    "SoFi lifecycle (Step 1); endpoints (Add Paper Biller); propuesta P4"),
+    { es: "Cómo se agrega", en: "How adding works" },
+    { es: "Se intenta electrónico primero; el cheque es el plan B", en: "Electronic first; the check is plan B" },
+    { es: "El usuario busca la empresa y la agrega. Si es electrónica (red RPPS, ~44.000), queda agregada. Si SoFi devuelve el código de que no lo es (421-01), se agrega como paper biller y se paga con cheque. La plata sale siempre de la cuenta Deposit; lo que cambia es cómo llega.",
+      en: "The user searches for the company and adds it. If it's electronic (RPPS network, ~44,000), it is added. If SoFi returns the code saying it isn't (421-01), it is added as a paper biller and paid by check. Money always leaves the Deposit account; only the delivery changes." },
+    "Meeting with Chap (Slack, Oct 22); SoFi docs: Creating a Billpay Transaction"),
+  switchMethod: N("ask", ["Chap"],
+    { es: "¿Cambiar de método?", en: "Switching method?" },
+    { es: "¿Alguien con pago electrónico necesita mandar un cheque a la misma empresa?", en: "Could someone paying electronically need to send a check to the same company?" },
+    { es: "Hoy el método lo decide la búsqueda: electrónico si la empresa está en la red, cheque si no. ¿Hay casos en que el usuario necesite cambiar de método con la misma empresa, o al revés? Si sí, habría que agregar el biller dos veces o ampliar el flujo.",
+      en: "Today the search decides the method: electronic if the company is on the network, check if not. Are there cases where a user needs to switch method for the same company, or the other way around? If so, we'd add the biller twice or extend the flow." },
+    "SoFi docs (Add Paper Biller / Add RPPS Biller)"),
+  addrVal: N("ask", ["Chap"],
+    { es: "Validar direcciones", en: "Address validation" },
+    { es: "Estandarizar la dirección antes de guardar un cheque", en: "Standardize the address before saving a check" },
+    { es: "Galileo no valida la dirección de un paper biller: si está mal, el cheque vuelve. Proponemos estandarizarla (formato postal de EE. UU.) antes de guardar. ¿Ya existe una validación de direcciones en el alta de cuenta que podamos reutilizar?",
+      en: "Galileo does not validate a paper biller's address: if it's wrong, the check comes back. We propose standardizing it (US postal format) before saving. Is there already an address validation in account setup that we can reuse?" },
+    "SoFi docs (Add Paper Biller)"),
   paperForRpps: N("ask", ["Rafa", "SoFi"],
     { es: "¿Cheque a empresa de la red?", en: "Check to a network biller?" },
     { es: "¿Se puede mandar cheque a una empresa que sí está en RPPS?", en: "Can a check go to a biller that is on RPPS?" },
     { es: "La documentación solo describe el cheque cuando la búsqueda no encuentra al biller. No dice si se puede crear un paper biller para alguien que ya está en la red. Propuesta: no ofrecerlo (es más lento, puede tener comisión y suma Sardine).",
       en: "The docs only describe checks when search doesn't find the biller. They don't say whether a paper biller can be created for someone already on the network. Proposal: don't offer it (slower, may carry a fee, adds Sardine)." },
-    "SoFi lifecycle; doc sesión 2 §6"),
+    "SoFi lifecycle"),
   searchFields: N("why", ["Equipo"],
     { es: "Campos", en: "Fields" },
     { es: "Qué pide la búsqueda", en: "What search needs" },
@@ -526,13 +540,13 @@ const NOTES = {
     { es: "El número de cuenta no se verifica ni se edita", en: "The account number is neither verified nor editable" },
     { es: "Galileo valida el formato (error 485-03) pero no que la cuenta exista en ese biller, y no se puede cambiar después. Un error de tipeo manda la plata a la cuenta de otra persona en esa empresa, y se resuelve fuera de la app. Propuesta: pedirlo dos veces y explicar que para corregirlo hay que borrar el biller y agregarlo de nuevo.",
       en: "Galileo validates the format (error 485-03) but not that the account exists at that biller, and it can't be changed later. A typo sends money to someone else's account at that company, and fixing it happens outside the app. Proposal: ask for it twice and explain that fixing it means removing the biller and adding it again." },
-    "SoFi endpoints (Add RPPS Biller); Rafa #19–20"),
+    "SoFi endpoints (Add RPPS Biller)"),
   stepUp: N("why", ["Equipo"],
     { es: "Código SMS", en: "SMS code" },
     { es: "Verificación al agregar un destinatario", en: "Verification when adding a payee" },
     { es: "Agregar un destinatario nuevo dispara un step-up según el consultor de seguridad del cliente (KB CP3-PRD1). Acá usamos un código de 6 dígitos.",
       en: "Adding a new payee triggers step-up authentication per the client's security consultant (KB CP3-PRD1). Here we use a 6-digit code." },
-    "Doc sesión 2 §14 (CP3-PRD1)"),
+    "Dualboot analysis of SoFi docs"),
 
   /* ---- Checks ---- */
   checkFields: N("why", ["Equipo"],
@@ -546,7 +560,7 @@ const NOTES = {
     { es: "Sardine: dónde impacta y qué falta", en: "Sardine: where it hits and what's missing" },
     { es: "Chap (14/10): todo destinatario de un cheque “must be checked by Sardine”. Mandamos nombre y dirección y recibimos sí o no, “instant mostly”. Impacta en el backend: una llamada nueva antes de crear el paper biller o el pago, y un registro de auditoría que hay que guardar. Falta: el endpoint (Chap lo iba a pasar), el formato de respuesta, la demora, si se controla por cheque o por destinatario, y si se vuelve a controlar a alguien ya aprobado.",
       en: "Chap (Oct 14): every check recipient “must be checked by Sardine”. We send name and address and get a yes or no, “instant mostly”. Backend impact: a new call before creating the paper biller or payment, plus an audit record we have to store. Missing: the endpoint (Chap was sending it), response format, latency, whether it's per check or per payee, and whether an approved payee is re-checked." },
-    "Reunión con Chap 14/10 (11:46, 27:56); pregunta C3"),
+    "Reunión con Chap 14/10 (11:46, 27:56)"),
   sardineDecline: N("risk", ["Chap"],
     { es: "Sin motivo", en: "No reason given" },
     { es: "El rechazo no dice por qué", en: "The decline doesn't say why" },
@@ -558,7 +572,7 @@ const NOTES = {
     { es: "¿Qué hacemos si Sardine no responde?", en: "What if Sardine doesn't answer?" },
     { es: "No está definido. Propuesta: no crear el cheque, guardar el destinatario como pendiente y reintentar; nunca mandar un cheque sin aprobación. Falta acordar si el monto ocupa el límite diario mientras espera.",
       en: "Not defined. Proposal: don't create the check, keep the payee as pending and retry; never send a check without approval. Still to agree: whether the amount takes up the daily limit while it waits." },
-    "Rafa #25–26; board de alineación"),
+    "Dualboot analysis of SoFi docs"),
   checkTiming: N("why", ["Equipo"],
     { es: "Tiempos", en: "Timing" },
     { es: "Cuándo sale la plata y cuándo llega el cheque", en: "When money leaves and when the check arrives" },
@@ -570,13 +584,13 @@ const NOTES = {
     { es: "Comisión por cheque (CHK) y por cancelarlo (CHC)", en: "Check fee (CHK) and cancellation fee (CHC)" },
     { es: "Galileo puede cobrar por cada cheque y por cancelar uno. Si DingoBlu cobra o no es una decisión de negocio. Si cobra, se muestra antes de confirmar y antes de cancelar.",
       en: "Galileo can charge per check and per cancellation. Whether DingoBlu charges is a business decision. If it does, it shows before confirming and before canceling." },
-    "SoFi lifecycle (Fees); pregunta M4"),
+    "SoFi lifecycle (Fees)"),
   checkExpire: N("why", ["Chap"],
     { es: "Vence a 180 días", en: "Expires at 180 days" },
     { es: "Cheques vencidos, devueltos y perdidos", en: "Expired, returned and lost checks" },
     { es: "Si nadie lo cobra en 180 días vence (BPEX) y la plata vuelve (BADJ). Si el correo lo devuelve (BPCR), la plata vuelve. Si se pierde: cancelar, esperar 1–3 días a que vuelva la plata y mandarlo de nuevo. Falta: quién opera el CST (la herramienta de soporte de SoFi) para DingoBlu.",
       en: "If nobody cashes it in 180 days it expires (BPEX) and money returns (BADJ). If the post office returns it (BPCR), money returns. If it's lost: cancel, wait 1–3 days for the money and resend. Missing: who runs the CST (SoFi's support tool) for DingoBlu." },
-    "SoFi overview (FAQ); lifecycle; pregunta C7"),
+    "SoFi overview (FAQ); lifecycle"),
   cancelCheck: N("risk", ["Chap"],
     { es: "Cancelar cheque", en: "Cancel check" },
     { es: "Cancelar un cheque depende del estado", en: "Canceling a check depends on its state" },
@@ -588,7 +602,7 @@ const NOTES = {
     { es: "Pagarle a una persona se parece a un P2P", en: "Paying a person looks like P2P" },
     { es: "Un cheque al dueño del departamento o a un contratista es mandar plata a alguien, no pagar una factura. Por eso existe el control de Sardine, y puede haber más escrutinio AML. ¿La cuenta es personal o de negocio?",
       en: "A check to a landlord or contractor is sending money to someone, not paying a bill. That's why the Sardine check exists, and there may be more AML scrutiny. Is the account personal or business?" },
-    "Rafa, análisis §2 #8"),
+    "Dualboot analysis of SoFi docs"),
 
   /* ---- Pay ---- */
   freeAmount: N("why", ["Equipo"],
@@ -596,13 +610,13 @@ const NOTES = {
     { es: "Sin factura, el monto lo decide el usuario", en: "Without a bill, the user decides the amount" },
     { es: "Galileo acepta cualquier monto positivo hasta $25.000 por pago (LIMBP). No conoce la factura ni su total, así que no existe “pago parcial”: si la empresa acepta menos es un tema entre el usuario y la empresa. Sugerimos el último monto pagado como atajo.",
       en: "Galileo accepts any positive amount up to $25,000 per payment (LIMBP). It doesn't know the bill or its total, so there's no “partial payment”: whether the biller accepts less is between the user and the biller. We suggest the last amount paid as a shortcut." },
-    "SoFi lifecycle (validation rules); propuesta P3"),
+    "SoFi lifecycle (validation rules)"),
   depositOnly: N("ask", ["Mike", "Chap"],
     { es: "Solo Deposit", en: "Deposit only" },
     { es: "Se paga solo con el saldo de la cuenta Deposit", en: "Pay only from the Deposit balance" },
-    { es: "Sin pagar desde Savings y sin una segunda cuenta (propuesta P5). Chap quiere “mover plata desde ahorros” cuando no alcanza, pero eso es una transferencia, y Transfer está fuera del contenedor del MVP (CP3). ¿Entra en Bill Pay o llega cuando exista Transfer?",
-      en: "No paying from Savings and no second account (proposal P5). Chap wants “move money in from savings” when it's short, but that's a transfer, and Transfer is outside the MVP container (CP3). Is it part of Bill Pay or does it come with Transfer?" },
-    "Board P5 y M3; README CP3"),
+    { es: "Sin pagar desde Savings y sin una segunda cuenta. Chap quiere “mover plata desde ahorros” cuando no alcanza, pero eso es una transferencia, y Transfer está fuera del MVP. ¿Entra en Bill Pay o llega cuando exista Transfer?",
+      en: "No paying from Savings and no second account. Chap wants “move money in from savings” when it's short, but that's a transfer, and Transfer is outside the MVP. Is it part of Bill Pay or does it come with Transfer?" },
+    "Dualboot analysis of SoFi docs"),
   insufficient: N("why", ["Chap"],
     { es: "Sin fondos", en: "Insufficient funds" },
     { es: "Si no alcanza, no se paga y no hay reintento", en: "If it's short, it doesn't go out and there's no retry" },
@@ -614,57 +628,57 @@ const NOTES = {
     { es: "Límite diario de $10.000", en: "$10,000 daily limit" },
     { es: "Chap: “max amount is 10k per day”, y los cheques cuentan (respondió “Yes”). Lo construimos nosotros: Galileo solo limita cada pago a $25.000. Falta: en qué zona horaria se cuenta el día, si un programado cuenta el día que se crea o el día que se ejecuta, si cancelar libera el cupo y si un cheque cuenta antes de que Sardine lo apruebe.",
       en: "Chap: “max amount is 10k per day”, and checks count (he answered “Yes”). We build it: Galileo only caps each payment at $25,000. Missing: which time zone defines the day, whether a scheduled payment counts on creation or on its run date, whether canceling frees the amount, and whether a check counts before Sardine approves it." },
-    "Reunión 14/10 (27:48–28:12); pregunta C4"),
+    "Reunión 14/10 (27:48–28:12)"),
   fees: N("fee", ["Mike", "Chap"],
     { es: "Comisión", en: "Fee" },
     { es: "¿Hay comisión por pago electrónico (BPY)?", en: "Is there an electronic payment fee (BPY)?" },
-    { es: "Galileo la soporta; cobrarla es decisión de DingoBlu. Si existe, va en esta pantalla antes de confirmar. Si el monto entra pero la comisión no, el parámetro BPPPF puede diferirla. El prototipo de Mati dice “No fee” sin que esté confirmado.",
-      en: "Galileo supports it; charging it is DingoBlu's call. If it exists, it goes on this screen before confirming. If the amount fits but the fee doesn't, the BPPPF parameter can defer it. Mati's prototype says “No fee” without confirmation." },
-    "SoFi lifecycle (Fees); propuesta P10; pregunta M4"),
+    { es: "Galileo la soporta; cobrarla es decisión de DingoBlu. Si existe, va en esta pantalla antes de confirmar. Si el monto entra pero la comisión no, el parámetro BPPPF puede diferirla. Todavía no está confirmado si hay comisión.",
+      en: "Galileo supports it; charging it is DingoBlu's call. If it exists, it goes on this screen before confirming. If the amount fits but the fee doesn't, the BPPPF parameter can defer it. Whether there is a fee is not confirmed yet." },
+    "SoFi lifecycle (Fees)"),
   arrival: N("risk", ["Equipo"],
     { es: "1 a 10 días", en: "1 to 10 days" },
     { es: "Nunca prometer una fecha exacta de llegada", en: "Never promise an exact arrival date" },
-    { es: "El pago le llega a la empresa en 1 a 10 días según cómo esté configurada. Texto: “suele llegar en 1 a 10 días”. Si el usuario paga cerca del vencimiento (con recordatorio o eBill), avisamos que puede llegar tarde. ¿DingoBlu cubre recargos si llega tarde? (pregunta M6).",
-      en: "The payment reaches the biller in 1–10 days depending on its setup. Copy: “usually arrives in 1–10 days”. If the user pays close to the due date (reminder or eBill), we warn it may arrive late. Does DingoBlu cover late fees? (question M6)." },
-    "SoFi overview; board P7 y M6"),
+    { es: "El pago le llega a la empresa en 1 a 10 días según cómo esté configurada. Texto: “suele llegar en 1 a 10 días”. Si el usuario paga cerca del vencimiento (con recordatorio o eBill), avisamos que puede llegar tarde. ¿DingoBlu cubre recargos si llega tarde?.",
+      en: "The payment reaches the biller in 1–10 days depending on its setup. Copy: “usually arrives in 1–10 days”. If the user pays close to the due date (reminder or eBill), we warn it may arrive late. Does DingoBlu cover late fees?." },
+    "SoFi overview"),
   noUndo: N("why", ["Equipo"],
     { es: "Sin deshacer", en: "No undo" },
     { es: "Un pago de hoy no se puede deshacer", en: "Today's payment can't be undone" },
-    { es: "Los lotes salen a los :08 y :38 de cada hora y solo se cancela en estado N, así que la ventana es de minutos e impredecible. Por eso la revisión es clara antes de confirmar, y “Cancelar” existe solo en pagos programados, hasta el día anterior (propuesta P6, como Chase y Mercado Pago).",
-      en: "Batches run at :08 and :38 every hour and only state N can be canceled, so the window is minutes and unpredictable. So the review is clear before confirming, and “Cancel” exists only on scheduled payments, until the day before (proposal P6, like Chase and Mercado Pago)." },
-    "SoFi lifecycle; board P6"),
+    { es: "Los lotes salen a los :08 y :38 de cada hora y solo se cancela en estado N, así que la ventana es de minutos e impredecible. Por eso la revisión es clara antes de confirmar, y “Cancelar” existe solo en pagos programados, hasta el día anterior (como Chase y Mercado Pago).",
+      en: "Batches run at :08 and :38 every hour and only state N can be canceled, so the window is minutes and unpredictable. So the review is clear before confirming, and “Cancel” exists only on scheduled payments, until the day before (like Chase and Mercado Pago)." },
+    "SoFi lifecycle"),
   idempotency: N("risk", ["Rafa"],
     { es: "Doble toque", en: "Double tap" },
     { es: "Pagos duplicados por doble toque o red lenta", en: "Duplicate payments from double taps or bad network" },
     { es: "Galileo no documenta una clave de idempotencia: la tenemos que poner nosotros, y bloquear el botón mientras se envía.",
       en: "Galileo documents no idempotency key: we have to add one, and lock the button while sending." },
-    "Rafa #6"),
+    "Dualboot analysis of SoFi docs"),
   leftAfter: N("why", ["Equipo"],
     { es: "¿Me alcanza?", en: "Can I afford it?" },
     { es: "“Te quedan $X después de pagar”", en: "“$X left after paying”" },
     { es: "Responde “¿me alcanza?” justo cuando importa, sin tarjeta de saldo en la home (idea del prototipo de Chap). Si hay comisión, hay que restarla también.",
       en: "Answers “can I afford it?” right when it matters, without a balance card on the home (idea from Chap's prototype). If there's a fee, it has to be subtracted too." },
-    "Prototipo de Chap (video 20/10); Rafa #7, #9"),
+    "Prototipo de Chap (video 20/10)"),
   schedWeekend: N("ask", ["Chap"],
     { es: "¿Fin de semana?", en: "Weekends?" },
     { es: "¿El programador corre fines de semana y feriados?", en: "Does the scheduler run on weekends and holidays?" },
-    { es: "Los lotes electrónicos a Mastercard salen todos los días, incluso fines de semana. El cheque solo se imprime en días hábiles. No está claro qué pasa con un pago programado para un sábado (el prototipo de Mati dice que sale ese día).",
-      en: "Electronic batches to Mastercard run every day, weekends included. Checks only print on business days. It's unclear what happens to a payment scheduled for a Saturday (Mati's prototype says it goes that day)." },
-    "SoFi overview; pregunta C8"),
+    { es: "Los lotes electrónicos a Mastercard salen todos los días, incluso fines de semana. El cheque solo se imprime en días hábiles. No está claro qué pasa con un pago programado para un sábado (la propuesta actual es que salga ese día).",
+      en: "Electronic batches to Mastercard run every day, weekends included. Checks only print on business days. It's unclear what happens to a payment scheduled for a Saturday (the current proposal is that it goes that day)." },
+    "SoFi overview"),
 
   /* ---- Status ---- */
   neverDelivered: N("risk", ["Chap"],
     { es: "Nunca “Entregado”", en: "Never “Delivered”" },
     { es: "No existe “Entregado” en el pago electrónico", en: "“Delivered” doesn't exist for electronic payments" },
-    { es: "Galileo nunca confirma que la empresa recibió un pago electrónico: solo que salió hacia Mastercard (estado P). El prototipo de Chap muestra “Delivered” y “Arrived at Verizon”: hay que acordar con él “Enviado · suele llegar en 1 a 10 días” (propuesta P7). El cheque sí puede mostrar cobrado.",
-      en: "Galileo never confirms the biller received an electronic payment, only that it left for Mastercard (state P). Chap's prototype shows “Delivered” and “Arrived at Verizon”: we need to agree with him on “Sent · usually arrives in 1–10 days” (proposal P7). Checks can show cashed." },
-    "SoFi overview (FAQ); reunión 14/10 (24:24, 26:53); board P7"),
+    { es: "Galileo nunca confirma que la empresa recibió un pago electrónico: solo que salió hacia Mastercard (estado P). El prototipo de Chap muestra “Delivered” y “Arrived at Verizon”: hay que acordar con él “Enviado · suele llegar en 1 a 10 días”. El cheque sí puede mostrar cobrado.",
+      en: "Galileo never confirms the biller received an electronic payment, only that it left for Mastercard (state P). Chap's prototype shows “Delivered” and “Arrived at Verizon”: we need to agree with him on “Sent · usually arrives in 1–10 days”. Checks can show cashed." },
+    "SoFi overview (FAQ); reunión 14/10 (24:24, 26:53)"),
   webhooks: N("why", ["Rafa"],
     { es: "Webhooks", en: "Webhooks" },
     { es: "Los estados llegan por webhooks", en: "Statuses arrive via webhooks" },
     { es: "Events API de SoFi: BPCQ (creado), BPAY (debitado), BRRJ (rechazado), BSPF (programado falló), BPCM (cheque enviado), BPCC (cobrado), BPCR (devuelto), BPEX (vencido), BADJ (plata devuelta). Para notificar con la app cerrada hace falta un backend que los reciba; consultar al entrar solo sirve para pintar la pantalla. Pueden llegar tarde, repetidos o desordenados (un BRRJ puede llegar horas después de “Enviado”): los estados solo avanzan.",
       en: "SoFi Events API: BPCQ (created), BPAY (debited), BRRJ (rejected), BSPF (scheduled failed), BPCM (check mailed), BPCC (cashed), BPCR (returned), BPEX (expired), BADJ (money returned). Notifying with the app closed needs a backend that receives them; polling on open only paints the screen. They can arrive late, duplicated or out of order (a BRRJ can come hours after “Sent”): statuses only move forward." },
-    "SoFi Events API; lifecycle; Rafa #31–32"),
+    "SoFi Events API; lifecycle"),
   checkNoTrack: N("why", ["Equipo"],
     { es: "Sin rastreo postal", en: "No postal tracking" },
     { es: "¿Cómo se sigue algo físico?", en: "How do you track something physical?" },
@@ -682,9 +696,9 @@ const NOTES = {
   autopayScope: N("ask", ["Mike", "Chap"],
     { es: "¿Día 1?", en: "Day one?" },
     { es: "¿El autopay entra el día 1?", en: "Is autopay in on day one?" },
-    { es: "Mike (21/10): probablemente queda fuera del día 1, justamente porque no hay cómo ingerir la factura. Hay que acordarlo con Chap: el autopay de monto fijo es posible con SoFi, pero no es el autopay flexible del prototipo.",
-      en: "Mike (Oct 21): probably out of day one, precisely because there's no way to ingest the bill. Needs agreement with Chap: fixed-amount autopay is possible with SoFi, but it's not the prototype's flexible autopay." },
-    "Granola 21/10 (Mike)"),
+    { es: "Probablemente queda fuera del día 1, porque no hay cómo ingerir la factura. Hay que acordarlo: el autopay de monto fijo es posible con SoFi, pero no es el autopay flexible del prototipo.",
+      en: "Probably out of day one, because there's no way to ingest the bill. Needs agreement: fixed-amount autopay is possible with SoFi, but it's not the prototype's flexible autopay." },
+    "Dualboot analysis of SoFi docs"),
   autopaySkip: N("risk", ["Chap"],
     { es: "No se saltea", en: "Can't skip one" },
     { es: "No se puede saltear una cuota", en: "One run can't be skipped" },
@@ -694,9 +708,9 @@ const NOTES = {
   autopayFunds: N("risk", ["Chap"],
     { es: "Saldo ese día", en: "Balance that day" },
     { es: "El saldo se revisa recién el día del pago", en: "Balance is checked only on the day" },
-    { es: "No hay control de saldo hasta la fecha de proceso. Si ese día no alcanza, falla (BSPF) y no se reintenta. Si se permite sobregiro en recurrentes depende del parámetro AAIGB del programa: ¿cómo está configurado para DingoBlu? (pregunta C5). Propuesta: avisar 2 días antes.",
-      en: "There's no balance check until the process date. If it's short that day, it fails (BSPF) with no retry. Whether recurring payments can overdraw depends on the program's AAIGB parameter: how is it set for DingoBlu? (question C5). Proposal: warn 2 days before." },
-    "SoFi lifecycle (Balance timing); pregunta C5"),
+    { es: "No hay control de saldo hasta la fecha de proceso. Si ese día no alcanza, falla (BSPF) y no se reintenta. Si se permite sobregiro en recurrentes depende del parámetro AAIGB del programa: ¿cómo está configurado para DingoBlu?. Propuesta: avisar 2 días antes.",
+      en: "There's no balance check until the process date. If it's short that day, it fails (BSPF) with no retry. Whether recurring payments can overdraw depends on the program's AAIGB parameter: how is it set for DingoBlu?. Proposal: warn 2 days before." },
+    "SoFi lifecycle (Balance timing)"),
   removeBiller: N("risk", ["Equipo"],
     { es: "Programados", en: "Scheduled" },
     { es: "Borrar un biller no cancela sus pagos programados", en: "Removing a biller doesn't cancel its scheduled payments" },
@@ -710,55 +724,55 @@ const NOTES = {
     { es: "Algunas empresas tienen eBill y otras no", en: "Some billers have eBills and some don't" },
     { es: "La home mezcla dos modos para siempre: facturas con monto y vencimiento, y billers sin factura donde el usuario escribe el monto. El riesgo: que “no veo factura” se lea como “no debo nada”. Chap (14/10): “most of them don't”.",
       en: "The home mixes two modes forever: bills with amount and due date, and billers without bills where the user types the amount. The risk: “I see no bill” read as “I owe nothing”. Chap (Oct 14): “most of them don't”." },
-    "Rafa §3; reunión 14/10 (18:19)"),
+    "reunión 14/10 (18:19)"),
   ebStale: N("risk", ["Equipo"],
     { es: "Monto viejo", en: "Stale amount" },
     { es: "El monto puede estar desactualizado", en: "The amount may be out of date" },
     { es: "Si mostramos “$142,18 a pagar”, el usuario lo toma como verdad. Si está viejo o no incluye recargos, paga de menos y culpa a DingoBlu. Propuesta: mostrar de dónde sale y cuándo se actualizó.",
       en: "If we show “$142.18 due”, the user takes it as truth. If it's old or misses late fees, they underpay and blame DingoBlu. Proposal: show where it comes from and when it was updated." },
-    "Rafa §3"),
+    "Dualboot analysis of SoFi docs"),
   ebMatch: N("risk", ["Rafa"],
     { es: "Dos directorios", en: "Two directories" },
     { es: "Emparejar billers de eBills con billers RPPS", en: "Matching eBill billers to RPPS billers" },
     { es: "El proveedor de eBills tiene su propio directorio. Cada factura hay que pagarla al biller RPPS correcto. Un emparejamiento equivocado hace que una factura mostrada bajo una empresa se pague a otra.",
       en: "The eBill provider has its own directory. Each bill has to be paid to the right RPPS biller. A wrong match means a bill shown under one company is paid to another." },
-    "Rafa §3; pregunta C1"),
+    "Dualboot analysis of SoFi docs"),
   ebConsent: N("ask", ["Chap", "Mike"],
     { es: "Consentimiento y datos", en: "Consent and data" },
     { es: "Conectar la cuenta con cada empresa", en: "Connecting the account at each biller" },
     { es: "Ver eBills suele requerir que el usuario conecte su cuenta con cada empresa (consentimiento y a veces usuario y contraseña). Es fricción y son datos que hay que guardar, lo que choca con el criterio de Chap de no almacenar. Depende del proveedor.",
       en: "Seeing eBills usually requires the user to connect their account at each biller (consent and sometimes username and password). It's friction and it's data to store, which clashes with Chap's no-storage stance. Depends on the provider." },
-    "Rafa §3"),
+    "Dualboot analysis of SoFi docs"),
   ebFull: N("why", ["Equipo"],
     { es: "Se paga el total", en: "Pay in full" },
     { es: "Con eBill se paga el total", en: "With an eBill you pay in full" },
-    { es: "Propuesta P2 (no negociable): si sabemos el monto, no hay pago parcial. Única excepción: tarjetas y préstamos que informan un mínimo, si el proveedor lo manda; ahí se ofrece mínimo o total. Choca con el prototipo de Mati, que deja pagar menos.",
-      en: "Proposal P2 (non-negotiable): if we know the amount, no partial payments. Only exception: cards and loans that report a minimum, if the provider sends it; then offer minimum or full. Conflicts with Mati's prototype, which allows paying less." },
-    "Board P2; explicación de flujos §3"),
+    { es: "Propuesta: si sabemos el monto, no hay pago parcial. Única excepción: tarjetas y préstamos que informan un mínimo, si el proveedor lo manda; ahí se ofrece mínimo o total.",
+      en: "Proposal: if we know the amount, no partial payments. Only exception: cards and loans that report a minimum, if the provider sends it; then offer minimum or full." },
+    "Dualboot analysis of SoFi docs"),
   ebAutopay: N("verify", ["Rafa", "Chap"],
     { es: "Autopay flexible", en: "Flexible autopay" },
     { es: "“Pagar lo que diga la factura” lo armamos nosotros", en: "“Pay whatever the bill says” is ours to build" },
-    { es: "El recurrente de SoFi es de monto fijo. Para pagar el monto de cada factura habría que crear un pago programado por cada eBill que llega (Create Bill Payment con fecha futura). Es una inferencia nuestra: validar con Rafa y con SoFi. Con tope máximo opcional.",
-      en: "SoFi recurring is fixed-amount. To pay each bill's amount we'd create one scheduled payment per incoming eBill (Create Bill Payment with a future date). That's our inference: validate with Rafa and SoFi. Optional maximum cap." },
-    "SoFi lifecycle; pregunta C6"),
+    { es: "El recurrente de SoFi es de monto fijo. Para pagar el monto de cada factura habría que crear un pago programado por cada eBill que llega (Create Bill Payment con fecha futura). Es una inferencia nuestra: validar con SoFi. Con tope máximo opcional.",
+      en: "SoFi recurring is fixed-amount. To pay each bill's amount we'd create one scheduled payment per incoming eBill (Create Bill Payment with a future date). That's our inference: validate with SoFi. Optional maximum cap." },
+    "SoFi lifecycle"),
   ebSeveral: N("risk", ["Rafa"],
     { es: "Falla parcial", en: "Partial failure" },
     { es: "Pagar varias: una puede fallar y las otras salir", en: "Paying several: one can fail while others go" },
     { es: "No hay pago en lote: es una llamada por factura. Si el saldo alcanza para algunas, hay que decidir qué pasa con el resto. Propuesta: avisar antes de confirmar si no alcanza para todas.",
       en: "There's no batch payment: one call per bill. If the balance covers only some, we must decide what happens with the rest. Proposal: warn before confirming if it doesn't cover all." },
-    "Rafa §1 #6"),
+    "Dualboot analysis of SoFi docs"),
   ebOrder: N("why", ["Equipo"],
     { es: "Orden", en: "Order" },
     { es: "Una sola lista ordenada por estado", en: "One list ordered by state" },
-    { es: "Acordado el 20/10 (H1): falló → vencida o vence hoy → próximas. Total pendiente arriba (este mes + vencidas). “Estás al día” cuando no hay nada.",
-      en: "Agreed Oct 20 (H1): failed → overdue or due today → upcoming. Total pending at the top (this month + overdue). “You're all caught up” when nothing is pending." },
-    "Board de alineación H1"),
+    { es: "Propuesta: falló → vencida o vence hoy → próximas. Total pendiente arriba (este mes + vencidas). “Estás al día” cuando no hay nada.",
+      en: "Proposal: failed → overdue or due today → upcoming. Total pending at the top (this month + overdue). “You're all caught up” when nothing is pending." },
+    "Dualboot analysis of SoFi docs"),
   ebDismiss: N("ask", ["Chap"],
     { es: "Ya la pagué", en: "Already paid" },
     { es: "“Ya la pagué”: ¿el proveedor se entera?", en: "“I already paid it”: does the provider know?" },
-    { es: "Saca la factura de pendientes sin cobrar nada (H3). Hay que ver si el proveedor de eBills la marca como pagada o si solo la ocultamos nosotros (otro dato que guardar).",
-      en: "Removes the bill from pending without charging (H3). Need to check whether the eBill provider marks it paid or we just hide it (more data to store)." },
-    "Board de alineación H3"),
+    { es: "Saca la factura de pendientes sin cobrar nada. Hay que ver si el proveedor de eBills la marca como pagada o si solo la ocultamos nosotros (otro dato que guardar).",
+      en: "Removes the bill from pending without charging. Need to check whether the eBill provider marks it paid or we just hide it (more data to store)." },
+    "Dualboot analysis of SoFi docs"),
   ebSchedule: N("risk", ["Equipo"],
     { es: "Puede llegar tarde", en: "May arrive late" },
     { es: "Programar para el vencimiento puede llegar tarde", en: "Scheduling on the due date may arrive late" },
@@ -839,7 +853,7 @@ function seed() {
 
 /* ================= State ================= */
 const S = {
-  lang: localStorage.getItem("bpab-lang") || "es", tab: "proto", plan: null, notes: true, low: false, sardine: "ok",
+  lang: localStorage.getItem("bpab-lang") || "es", tab: "proto", plan: null, notes: false, low: false, sardine: "ok",
   stack: [{ r: "start", p: {} }], data: null, pick: null, draft: {}, cur: [], dir: 1
 };
 let seq = 100;
@@ -974,17 +988,15 @@ R.homeA = () => {
   return {
     title: L("Pagar cuentas", "Pay bills"), large: true,
     body: `
-    <div class="summary"><span class="lbl">${L("Programado en los próximos 30 días", "Scheduled in the next 30 days")}</span>
-      <span class="total num">${money(total)}</span>
-      <span class="ctx">${L("Lo que vos programaste. No vemos cuánto debés ni cuándo vence.", "What you scheduled. We can't see what you owe or when it's due.")}</span>
-      ${pins("noEbillHome", "schedSource")}
-      <div class="acts"><button type="button" class="btn primary sm" data-act="pickPay">${IC.send}${L("Hacer un pago", "Make a payment")}</button><button type="button" class="btn secondary sm" data-act="add">${IC.plus}${L("Agregar", "Add")}</button></div></div>
-    <section class="sec"><div class="sec-head"><h2>${L("Próximos", "Upcoming")}</h2>${pins("reminders")}</div>
-      ${up.length ? `<ul class="list">${upRows}</ul>` : notice("info", IC.info, L("No tenés nada programado. Programá un pago o activá un recordatorio desde cada biller.", "Nothing scheduled. Schedule a payment or set a reminder from any biller."))}</section>
+    ${!B.length ? `<div class="success" style="padding-top:28px"><span class="mark">${IC.plus}</span><h2>${L("Todavía no agregaste ninguna empresa", "You haven't added anyone yet")}</h2><p>${L("Agregá una empresa o un destinatario para empezar a pagar.", "Add a company or a payee to start paying.")}</p><button type="button" class="btn primary" data-act="add">${IC.plus}${L("Agregar", "Add")}</button></div>` : `
+    <div class="acts" style="padding:4px 16px 8px"><button type="button" class="btn primary sm" data-act="pickPay">${IC.send}${L("Hacer un pago", "Make a payment")}</button><button type="button" class="btn secondary sm" data-act="add">${IC.plus}${L("Agregar", "Add")}</button></div>
+    ${!biller("duke") ? "" : notice("info", IC.star, `<b>${L("¿Pagaste a Duke 3 meses seguidos cerca del 10?", "Paid Duke 3 months in a row around the 10th?")}</b><br>${L("Podemos recordártelo cada mes.", "We can remind you every month.")} <button type="button" class="btn link" data-act="reminder" data-id="duke">${L("Configurar", "Set up")}</button>${pins("pattern")}`)}
+    <section class="sec"><div class="sec-head"><h2>${L("Próximos", "Upcoming")}${total ? ` <span class="num" style="font-weight:400;color:var(--g500)">· ${money(total)} ${L("programado", "scheduled")}</span>` : ""}</h2>${pins("reminders", "noEbillHome", "schedSource")}</div>
+      ${up.length ? `<ul class="list">${upRows}</ul>` : notice("info", IC.info, L("No tenés nada programado. Programá un pago o activá un recordatorio desde cada empresa.", "Nothing scheduled. Schedule a payment or set a reminder from any payee."))}</section>`}
     ${flight.length ? `<section class="sec"><div class="sec-head"><h2>${L("En curso", "In flight")}</h2>${pins("inflight", "checkNoTrack")}</div><ul class="list">${flRows}</ul></section>` : ""}
     <section class="sec"><div class="sec-head"><h2>${L("Tus billers", "Your billers")}</h2>${pins("logos", "categories", "activityInBiller")}</div>
       <ul class="list">${bRows}<li><button type="button" class="add-row" data-act="add"><span class="ic">${IC.plus}</span>${L("Agregar un biller", "Add a biller")}</button></li></ul></section>
-    ${!biller("duke") ? "" : notice("info", IC.star, `<b>${L("¿Pagaste a Duke 3 meses seguidos cerca del 10?", "Paid Duke 3 months in a row around the 10th?")}</b><br>${L("Podemos recordártelo cada mes.", "We can remind you every month.")} <button type="button" class="btn link" data-act="reminder" data-id="duke">${L("Configurar", "Set up")}</button>${pins("pattern")}`)}`
+`
   };
 };
 
@@ -1280,7 +1292,7 @@ R.search = () => {
       ${pins("searchFields")}
     </div>
     <div class="sec"><div class="sec-head"><h2 id="res-h">${L("Resultados", "Results")}</h2>${pins("dirSchema", "logos")}</div><div id="results"></div></div>
-    ${notice("warn", IC.mail, `<b>${L("¿No la encontrás?", "Can't find it?")}</b><br>${L("Podemos mandarle un cheque en papel.", "We can mail them a paper check.")} <button type="button" class="btn link" data-act="addKind" data-id="company">${L("Mandar cheque", "Send a check")}</button>${pins("addTypes")}`)}`,
+    ${notice("warn", IC.mail, `<b>${L("¿No la encontrás?", "Can't find it?")}</b><br>${L("Podés ingresarla a mano y le mandamos un cheque en papel.", "Enter it manually and we'll mail them a paper check.")} <button type="button" class="btn link" data-act="addKind" data-id="company">${L("Ingresar a mano", "Enter manually")}</button>${pins("addTypes", "switchMethod")}`)}`,
     after: () => updateResults()
   };
 };
@@ -1289,7 +1301,7 @@ function updateResults() {
   const f = S.draft.search; const q = f.q.trim().toLowerCase();
   if (q.length < 2) { el.innerHTML = `<p class="hint">${L("Escribí al menos 2 letras. Probá “duke”, “verizon” o “spectrum”.", "Type at least 2 letters. Try “duke”, “verizon” or “spectrum”.")}</p>`; return; }
   const hits = DIR.filter(x => x.name.toLowerCase().includes(q) && (!f.st || x.loc.endsWith(f.st)));
-  if (!hits.length) { el.innerHTML = notice("warn", IC.search, `${L("No encontramos esa empresa en la red (error 421-01). Podés mandarle un cheque.", "That company isn't on the network (error 421-01). You can mail a check.")}${pins("addTypes")}`); renderPanel(); return; }
+  if (!hits.length) { el.innerHTML = notice("warn", IC.search, `${L("Esta empresa no recibe pagos electrónicos (error 421-01). Podés ingresarla a mano y mandarle un cheque.", "This company doesn't take electronic payments (error 421-01). You can enter it manually and mail a check.")} <button type="button" class="btn link" data-act="addKind" data-id="company">${L("Ingresar a mano", "Enter manually")}</button>${pins("addTypes")}`); renderPanel(); return; }
   el.innerHTML = `<ul class="list">${hits.map(x => {
     const added = S.data.billers.some(b => b.id === x.id);
     return row({ act: added ? "biller" : "pickDir", id: x.id, lead: logo(x), name: esc(x.name), sub: `<span>${esc(x.loc)} · ${esc(T(x.cat))}</span>${S.plan === "B" ? (x.eb ? `<span class="chip ok">eBill</span>` : `<span class="chip neutral">${L("sin eBill", "no eBill")}</span>`) : ""}`, end: added ? `<span class="chip neutral">${L("Ya agregada", "Already added")}</span>` : "" });
@@ -1351,10 +1363,10 @@ R.checkForm = () => {
   const f = S.draft.check; const person = f.type === "person";
   const fld = (k, label, opt = false, ph = "") => `<div class="field"><label for="cf-${k}">${label}${opt ? ` <span class="opt">${L("(opcional)", "(optional)")}</span>` : ""}</label><input type="text" id="cf-${k}" data-cf="${k}" value="${esc(f[k] || "")}" placeholder="${ph}"></div>`;
   return {
-    title: person ? L("Pagarle a una persona", "Pay a person") : L("Mandar un cheque", "Send a check"),
+    title: L("Cheque en papel", "Paper check"),
     body: `${notice("warn", IC.mail, `<b>${L("Esto se paga con cheque en papel", "This is paid by paper check")}</b><br>${L("La plata sale de tu cuenta antes de imprimirlo. Llega en 1 a 10 días.", "Money leaves your account before it's printed. Arrives in 1–10 days.")}${pins("checkTiming", "checkFee")}`)}
     <div class="card">
-      ${fld("name", person ? L("Nombre completo", "Full name") : L("Nombre de la empresa", "Company name"), false, person ? "Carlos Méndez" : "")}
+      ${fld("name", L("Nombre del destinatario", "Payee name"), false, "Carlos Méndez")}
       ${fld("street", L("Calle y número", "Street address"), false, "1420 SW 8th St")}
       ${fld("apt", L("Depto., unidad", "Apt, unit"), true)}
       <div class="row2">${fld("city", L("Ciudad", "City"), false, "Miami")}<div class="field"><label for="cf-state">${L("Estado", "State")}</label><select class="input" id="cf-state" data-cf="state"><option value="">—</option>${["FL", "NC", "TX", "CA", "NY", "AZ", "GA", "IL"].map(s => `<option ${f.state === s ? "selected" : ""}>${s}</option>`).join("")}</select></div></div>
@@ -1388,11 +1400,10 @@ const home = () => S.plan === "B" ? "homeB" : "homeA";
 const cur = () => S.stack[S.stack.length - 1];
 function go(r, p = {}) { S.stack.push({ r, p }); S.dir = 1; render(); }
 function back() { if (S.stack.length > 1) { S.stack.pop(); S.dir = -1; render(); } }
-function toHome() { S.stack = [{ r: "start", p: {} }]; if (S.plan === "B") S.stack.push({ r: "introB", p: {} }); S.stack.push({ r: home(), p: {} }); S.dir = -1; S.pick = null; render(); }
+function toHome() { S.stack = [{ r: home(), p: {} }]; S.dir = -1; S.pick = null; render(); }
 function setPlan(pl, intro = true) {
   S.plan = pl; S.data = seed(); S.draft = {}; S.pick = null;
-  S.stack = [{ r: "start", p: {} }, { r: pl === "B" && intro ? "introB" : home(), p: {} }];
-  if (pl === "B" && !intro) S.stack.splice(1, 0, { r: "introB", p: {} });
+  S.stack = [{ r: home(), p: {} }];
   S.dir = 1; render();
 }
 
@@ -1402,25 +1413,25 @@ function render() {
   S.cur = [];
   const { r, p } = cur();
   const v = R[r](p);
-  const bar = v.hideTitle ? "" : `<header class="pbar${v.large ? " large" : ""}">${v.large || v.noBack ? "" : backBtn()}<h1>${v.title || ""}</h1>${v.large ? `<button type="button" class="btn link" data-act="restart">${L(`Plan ${S.plan} ⇄`, `Plan ${S.plan} ⇄`)}</button>` : ""}</header>`;
+  const bar = v.hideTitle ? "" : `<header class="pbar${v.large ? " large" : ""}">${v.large || v.noBack ? "" : backBtn()}<h1>${v.title || ""}</h1></header>`;
   $("#pages").innerHTML = `<section class="page ${S.dir > 0 ? "in" : S.dir < 0 ? "in-back" : ""}">${v.hideTitle ? `<header class="pbar"></header>` : bar}<div class="pbody${v.foot || v.overlayFoot ? " has-foot" : ""}">${v.body}</div>${v.foot ? `<div class="pfoot">${v.foot}</div>` : ""}${v.overlayFoot || ""}</section>`;
   if (v.after) v.after();
   renderChrome();
   renderPanel();
 }
 function renderPanel() {
-  const planNotes = S.plan === "A" ? ["planA", "effort"] : S.plan === "B" ? ["ebProvider", "ebMvp"] : [];
+  const planNotes = [];
   const screen = S.cur.filter(x => !planNotes.includes(x));
   const card = id => { const n = NOTES[id]; return `<div class="ncard k-${n.k}" id="nc-${id}"><span class="ktag">${KIND[n.k].icon}${T(KIND[n.k])}</span><h3>${esc(T(n.t))}</h3><p>${esc(T(n.b))}</p><div class="meta"><b>${L("Responde", "Answers")}:</b> ${n.who.map(w => T(WHO[w])).join(", ")} · <b>${L("Fuente", "Source")}:</b> ${esc(n.src)}</div></div>`; };
-  $("#panel").innerHTML = `<h2>${L("Notas de esta pantalla", "Notes on this screen")} (${screen.length})</h2>
-    <p class="lead">${L("Tocá una etiqueta punteada en el teléfono para abrirla. Acá están todas las de la pantalla actual.", "Tap a dashed tag on the phone to open it. All the ones on the current screen are here.")}</p>
+  $("#panel").innerHTML = `<h2>${L("Notas de revisión · no son parte del producto", "Review notes · not part of the product")} (${screen.length})</h2>
+    <p class="lead">${L("Los círculos de colores en el teléfono marcan dónde hay una nota. Acá están las de esta pantalla.", "The colored dots on the phone mark where a note exists. The ones on this screen are listed here.")}</p>
     ${screen.length ? screen.map(card).join("") : `<p class="empty-n">${L("Esta pantalla no tiene notas.", "No notes on this screen.")}</p>`}
     ${planNotes.length ? `<div class="grp">${S.plan === "A" ? L("Plan A · siempre presente", "Plan A · always on") : L("Plan B · siempre presente", "Plan B · always on")}</div>${planNotes.map(card).join("")}` : ""}`;
 }
 function renderChrome() {
   document.documentElement.lang = S.lang;
-  $("#t-title").innerHTML = `DingoBlu · Bill Pay · ${L("Plan A y Plan B", "Plan A and Plan B")}<small>${L("Prototipo de alcance · 21/10/2026 · fuente de verdad: documentación de SoFi/Galileo", "Scope prototype · Oct 21, 2026 · source of truth: SoFi/Galileo docs")}</small>`;
-  document.title = L("DingoBlu Bill Pay · Plan A (sin eBills) y Plan B (con eBills)", "DingoBlu Bill Pay · Plan A (no eBills) and Plan B (with eBills)");
+  $("#t-title").innerHTML = `DingoBlu · Bill Pay · ${L("prototipo", "prototype")}<small>${L("Prototipo de interacción · no es la versión final ni el diseño final", "Interaction prototype · not the final version or final design")}</small>`;
+  document.title = "DingoBlu Bill Pay · prototype";
   const tb = $("#tabs").children; tb[0].textContent = L("Prototipo", "Prototype"); tb[1].textContent = L("Pendientes y acuerdos", "Open items and agreements");
   [...tb].forEach(b => b.classList.toggle("on", b.dataset.tab === S.tab));
   const pl = $("#plans").children; pl[0].textContent = L("A · sin eBills", "A · no eBills"); pl[1].textContent = L("B · con eBills", "B · with eBills");
@@ -1429,7 +1440,7 @@ function renderChrome() {
   $("#l-bal").textContent = L("Saldo", "Balance");
   $("#sim-bal").innerHTML = `<option value="ok" ${!S.low ? "selected" : ""}>$1,284.60</option><option value="low" ${S.low ? "selected" : ""}>$120.00 ${L("(bajo)", "(low)")}</option>`;
   $("#sim-sardine").innerHTML = [["ok", L("aprueba", "approves")], ["no", L("rechaza", "declines")], ["down", L("no responde", "no answer")]].map(([v, t]) => `<option value="${v}" ${S.sardine === v ? "selected" : ""}>${t}</option>`).join("");
-  $("#l-notes").textContent = L("Mostrar notas", "Show notes");
+  $("#l-notes").textContent = L("Notas de revisión", "Review notes");
   $("#restart").textContent = L("Reiniciar", "Restart");
   $("#view-proto").hidden = S.tab !== "proto"; $("#view-pending").hidden = S.tab !== "pending";
   if (S.tab === "pending") renderPending();
@@ -1448,12 +1459,12 @@ function renderPending() {
   const cmp = [
     [L("Qué ve el usuario en la home", "What the user sees on the home"), L("Lo que programó, recordatorios propios y pagos en curso. Sin monto adeudado.", "What they scheduled, their own reminders and in-flight payments. No amount owed."), L("Total pendiente, facturas ordenadas por estado, “Estás al día”.", "Total pending, bills ordered by state, “You're all caught up”.")],
     [L("Monto", "Amount"), L("Libre, lo escribe el usuario (sugerimos el último).", "Free, typed by the user (we suggest the last one)."), L("El total de la eBill; mínimo o total en tarjetas. Libre en billers sin eBill.", "The eBill total; minimum or full on cards. Free on billers without eBills.")],
-    [L("Autopay", "Autopay"), L("Monto fijo, W/M/Q/Y, hasta 5 años. Mike: quizás no el día 1.", "Fixed amount, W/M/Q/Y, up to 5 years. Mike: maybe not day one."), L("“Lo que diga la factura”, con tope. Lo armamos nosotros encima de SoFi.", "“Whatever the bill says”, with a cap. Built by us on top of SoFi.")],
+    [L("Autopay", "Autopay"), L("Monto fijo, W/M/Q/Y, hasta 5 años. quizás no el día 1.", "Fixed amount, W/M/Q/Y, up to 5 years. maybe not day one."), L("“Lo que diga la factura”, con tope. Lo armamos nosotros encima de SoFi.", "“Whatever the bill says”, with a cap. Built by us on top of SoFi.")],
     [L("Vencimientos", "Due dates"), L("Solo si el usuario los carga (oportunidad: recordatorios).", "Only if the user sets them (opportunity: reminders)."), L("Vienen del proveedor.", "From the provider.")],
     [L("Cheque", "Check"), L("Plan B al agregar: empresa que no aparece o persona. Sardine.", "Plan B when adding: unlisted company or person. Sardine."), L("Igual que A.", "Same as A.")],
     [L("Proveedores", "Providers"), "SoFi/Galileo + Sardine", L("SoFi/Galileo + Sardine + proveedor de eBills (a definir)", "SoFi/Galileo + Sardine + eBill provider (TBD)")],
     [L("Datos que guardamos", "Data we store"), L("Recordatorios, contador del límite, auditoría de Sardine, mapeo de IDs.", "Reminders, limit counter, Sardine audit, ID mapping."), L("Lo de A + conexiones con cada biller, facturas descartadas, emparejamiento.", "A's + per-biller connections, dismissed bills, matching.")],
-    [L("Esfuerzo (Rafa)", "Effort (Rafa)"), L("Base M–L; cheques +40–60 %.", "Base M–L; checks +40–60%."), L("L–XL y bloquea hasta elegir proveedor.", "L–XL and blocked until a provider is chosen.")],
+    [L("Esfuerzo", "Effort"), L("Base M–L; cheques +40–60 %.", "Base M–L; checks +40–60%."), L("L–XL y bloquea hasta elegir proveedor.", "L–XL and blocked until a provider is chosen.")],
     [L("Para noviembre", "For November"), L("Sí, es el MVP probable.", "Yes, likely MVP."), L("Probablemente no.", "Probably not.")]
   ];
   $("#view-pending").innerHTML = `
@@ -1512,7 +1523,7 @@ function createBillerFromDraft() {
 const A = {
   back, home: toHome, go: id => go(id), noop: () => {},
   plan: id => setPlan(id),
-  restart: () => { S.plan = null; S.data = null; S.draft = {}; S.pick = null; S.tab = "proto"; S.stack = [{ r: "start", p: {} }]; S.dir = -1; render(); },
+  restart: () => { S.tab = "proto"; setPlan("A"); S.dir = -1; render(); },
   closeSheet: () => closeSheet(),
   closeNote: () => closeSheet(false, "#overlay2"),
   toast: id => toast(id),
@@ -1523,7 +1534,7 @@ const A = {
   pickPay: () => openSheet(`<div class="sh-head"><h2>${L("¿A quién le pagás?", "Who are you paying?")}</h2></div><div class="sh-body"><ul class="list">${S.data.billers.map(b => row({ act: "pay", id: b.id, lead: logo(b), name: esc(b.name), sub: methodTag(b) })).join("")}</ul></div><div class="sh-foot"><button type="button" class="btn secondary block" data-act="closeSheet">${L("Cerrar", "Close")}</button></div>`),
   autopay: id => { S.draft.ap = null; go("autopay", { id }); },
   autopayB: id => { S.draft.apb = null; go("autopayB", { id }); },
-  add: () => { S.draft.search = null; go("addType"); },
+  add: () => { S.draft.search = null; go("search"); },
   addKind: id => { if (id === "rpps") { S.draft.search = null; go("search"); } else { S.draft.check = { type: id }; go("checkForm"); } },
   pickDir: id => { S.draft.add = { dir: id }; go("acct"); },
   sugg: v => { S.draft.pay.amount = v; $("#amt").value = v; updatePay(); },
@@ -1600,8 +1611,14 @@ const A = {
     const f = S.draft.check; const miss = ["name", "street", "city", "state", "zip"].filter(k => !(f[k] || "").trim());
     const zipBad = f.zip && !/^\d{5}$/.test(f.zip);
     $("#cf-err").textContent = miss.length ? L("Completá nombre, calle, ciudad, estado y ZIP.", "Fill in name, street, city, state and ZIP.") : zipBad ? L("El ZIP tiene 5 dígitos. Solo direcciones de EE. UU.", "ZIP has 5 digits. US addresses only.") : "";
-    if (!miss.length && !zipBad) go("sardine");
+    if (!miss.length && !zipBad) {
+      const std = `${f.street.trim().toUpperCase()}${f.apt ? " " + f.apt.trim().toUpperCase() : ""}, ${f.city.trim().toUpperCase()} ${f.state} ${f.zip}`;
+      openSheet(`<div class="sh-head"><span class="ktag k-ask" style="justify-self:start">${IC.mail}${L("Dirección", "Address")}</span><h2>${L("Confirmá la dirección", "Confirm the address")}</h2></div>
+        <div class="sh-body"><p>${L("La estandarizamos para que el cheque llegue bien:", "We standardized it so the check arrives correctly:")}</p><p><b>${esc(std)}</b></p>${pins("addrVal")}</div>
+        <div class="sh-foot"><button type="button" class="btn primary block" data-act="addrUse">${L("Usar esta dirección", "Use this address")}</button><button type="button" class="btn secondary block" data-act="closeSheet">${L("Editar", "Edit")}</button></div>`);
+    }
   },
+  addrUse: () => { closeSheet(true); go("sardine"); },
   sardineRetry: () => { S.stack[S.stack.length - 1] = { r: "sardine", p: {} }; render(); }
 };
 
@@ -1643,7 +1660,7 @@ function fit() {
   document.documentElement.style.setProperty("--s", s);
 }
 window.addEventListener("resize", fit);
-fit(); render();
+fit(); document.body.classList.add("no-notes"); setPlan("A");
 })();
 </script>
 </body>
